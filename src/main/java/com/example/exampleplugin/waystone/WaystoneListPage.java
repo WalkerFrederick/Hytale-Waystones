@@ -82,6 +82,7 @@ public class WaystoneListPage extends CustomUIPage {
     private final String currentWaystoneId;
     private final Consumer<Waystone> onTeleport;
     private final Runnable onRename;
+    private final Runnable onSettings;
     private String searchQuery = "";
     // Cache the current list of waystones for index-based lookup
     private List<Waystone> currentWaystones = List.of();
@@ -94,17 +95,20 @@ public class WaystoneListPage extends CustomUIPage {
      * @param currentWaystoneId The waystone the player is currently at (can be null)
      * @param onTeleport Callback when player selects a waystone to teleport to
      * @param onRename Callback when player wants to rename the current waystone
+     * @param onSettings Callback when player wants to open settings
      */
     public WaystoneListPage(@Nonnull PlayerRef playerRef,
                             @Nonnull String playerUuid,
                             @Nullable String currentWaystoneId,
                             @Nonnull Consumer<Waystone> onTeleport,
-                            @Nonnull Runnable onRename) {
+                            @Nonnull Runnable onRename,
+                            @Nonnull Runnable onSettings) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction);
         this.playerUuid = playerUuid;
         this.currentWaystoneId = currentWaystoneId;
         this.onTeleport = onTeleport;
         this.onRename = onRename;
+        this.onSettings = onSettings;
     }
 
     @Override
@@ -123,42 +127,96 @@ public class WaystoneListPage extends CustomUIPage {
             }
         }
 
-        // Get waystones visible to this player
-        List<Waystone> waystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
+        // Bind settings button
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#SettingsButton",
+                EventData.of("Action", "settings")
+        );
+
+        // Bind exit button
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#CloseButton",
+                EventData.of("Action", "close")
+        );
+
+        // Get waystones visible to this player and split into public/private
+        List<Waystone> allWaystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
 
         // Filter by search query if present
         if (searchQuery != null && !searchQuery.isEmpty()) {
             String query = searchQuery.toLowerCase();
-            waystones = waystones.stream()
+            allWaystones = allWaystones.stream()
                     .filter(w -> w.getName().toLowerCase().contains(query) ||
                                  w.getOwnerName().toLowerCase().contains(query))
                     .toList();
         }
 
-        // Store the list for index-based lookup in event handler
-        this.currentWaystones = waystones;
+        // Split into public and private lists
+        List<Waystone> publicWaystones = allWaystones.stream()
+                .filter(Waystone::isPublic)
+                .toList();
+        List<Waystone> privateWaystones = allWaystones.stream()
+                .filter(w -> !w.isPublic())
+                .toList();
 
-        // Clear the list before adding entries
-        commandBuilder.clear("#WaystoneList");
+        // Store combined list for index-based lookup (public first, then private)
+        List<Waystone> combinedList = new java.util.ArrayList<>();
+        combinedList.addAll(publicWaystones);
+        combinedList.addAll(privateWaystones);
+        this.currentWaystones = combinedList;
 
-        // Add waystone entries
-        for (int i = 0; i < waystones.size(); i++) {
-            Waystone waystone = waystones.get(i);
-            String selector = "#WaystoneList[" + i + "]";
+        // Clear the lists
+        commandBuilder.clear("#PublicList");
+        commandBuilder.clear("#PrivateList");
 
-            // Append an entry button for each waystone
-            commandBuilder.append("#WaystoneList", "Pages/WaystoneEntryButton.ui");
-            commandBuilder.set(selector + " #Name.Text", waystone.getName());
-            commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
-            commandBuilder.set(selector + " #World.Text", waystone.getWorldName());
+        // Populate public waystones
+        if (publicWaystones.isEmpty()) {
+            commandBuilder.set("#NoPublic.Visible", true);
+        } else {
+            commandBuilder.set("#NoPublic.Visible", false);
+            for (int i = 0; i < publicWaystones.size(); i++) {
+                Waystone waystone = publicWaystones.get(i);
+                String selector = "#PublicList[" + i + "]";
+                int globalIndex = i; // Index in combined list
 
-            // Bind click event for this button - sends Index back to server
-            // The appended element IS the button, so use the list index selector directly
-            eventBuilder.addEventBinding(
-                    CustomUIEventBindingType.Activating,
-                    selector,
-                    EventData.of("Index", String.valueOf(i))
-            );
+                commandBuilder.append("#PublicList", "Pages/WaystoneEntryButton.ui");
+                commandBuilder.set(selector + " #Name.Text", waystone.getName());
+                commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
+                String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
+                commandBuilder.set(selector + " #World.Text", worldDisplay);
+
+                eventBuilder.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        selector,
+                        EventData.of("Index", String.valueOf(globalIndex))
+                );
+            }
+        }
+
+        // Populate private waystones
+        if (privateWaystones.isEmpty()) {
+            commandBuilder.set("#NoPrivate.Visible", true);
+        } else {
+            commandBuilder.set("#NoPrivate.Visible", false);
+            for (int i = 0; i < privateWaystones.size(); i++) {
+                Waystone waystone = privateWaystones.get(i);
+                String selector = "#PrivateList[" + i + "]";
+                int globalIndex = publicWaystones.size() + i; // Index in combined list
+
+                commandBuilder.append("#PrivateList", "Pages/WaystoneEntryButton.ui");
+                commandBuilder.set(selector + " #Name.Text", waystone.getName());
+                commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
+                String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
+                commandBuilder.set(selector + " #World.Text", worldDisplay);
+
+                eventBuilder.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        selector,
+                        EventData.of("Index", String.valueOf(globalIndex))
+                );
+            }
         }
     }
 
@@ -208,6 +266,12 @@ public class WaystoneListPage extends CustomUIPage {
                             rebuild();
                         }
                     }
+                }
+                case "settings" -> {
+                    System.out.println("[Waystone List] Settings button clicked, opening settings page...");
+                    // Don't close - let the new page replace this one
+                    onSettings.run();
+                    System.out.println("[Waystone List] onSettings callback completed");
                 }
                 case "close" -> close();
             }

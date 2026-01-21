@@ -1,0 +1,110 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+  LayoutMode: Middle;
+
+  $C.@DecoratedContainer {
+    @CloseButton = true;
+    Anchor: (Width: 600, Height: 700);
+
+    #Title {
+      $C.@Title {
+        @Text = "Settings";
+      }
+    }
+
+    #Content {
+      Padding: (Vertical: 32, Horizontal: 45);
+      LayoutMode: Top;
+
+      // Name section
+      Label {
+        Text: "Waystone Name";
+        Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+      }
+
+      Label {
+          Text: "Name of the Waystone";
+          Style: (FontSize: 12, TextColor: #6a7a8a);
+          Anchor: (Top: 4);
+      }
+
+      TextField #NameInput {
+        Style: $C.@DefaultInputFieldStyle;
+        Background: $C.@InputBoxBackground;
+        Anchor: (Top: 8, Height: 44);
+        MaxLength: 100;
+        Padding: (Horizontal: 10);
+        PlaceholderText: "Enter name...";
+      }
+
+      Label #Error {
+        Style: (RenderBold: true, TextColor: #bb3333);
+        Anchor: (Top: 4);
+        Visible: false;
+      }
+
+      // Visibility dropdown section
+      Group #Visibility {
+        LayoutMode: Top;
+        Anchor: (Top: 16);
+
+        Label {
+          Text: "Visibility";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+        }
+
+        Label {
+          Text: "Who can see this waystone in their list";
+          Style: (FontSize: 12, TextColor: #6a7a8a);
+          Anchor: (Top: 4);
+        }
+
+        $C.@DropdownBox #Input {
+          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+        }
+      }
+      
+      // Priority section (ops only)
+      Group #PrioritySection {
+        LayoutMode: Top;
+        Visible: false;
+
+        Label {
+          Text: "Sort Priority";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+          Anchor: (Top: 16);
+        }
+
+        Label {
+          Text: "Higher numbers appear first in the list";
+          Style: (FontSize: 12, TextColor: #6a7a8a);
+          Anchor: (Top: 4);
+        }
+
+        TextField #PriorityInput {
+          Style: $C.@DefaultInputFieldStyle;
+          Background: $C.@InputBoxBackground;
+          Anchor: (Top: 8, Height: 44);
+          Padding: (Horizontal: 10);
+          PlaceholderText: "0";
+        }
+      }
+
+      // Spacer to push buttons to bottom
+      Group {
+        FlexWeight: 1;
+      }
+
+      // Bottom button
+      Group {
+        Anchor: (Height: 44);
+
+        $C.@TextButton #SaveButton {
+          @Anchor = (Full: 0);
+          Text: "Save";
+        }
+      }
+    }
+  }
+}

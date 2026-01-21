@@ -71,8 +71,14 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
                     if (currentWaystoneId != null && currentWaystone != null) {
                         // Only allow owner to rename
                         if (currentWaystone.isOwnedBy(playerUuid)) {
-                            openNamingPage(playerRef, currentWaystoneId, currentWaystone.getName());
+                            openNamingPage(playerRef, currentWaystoneId, currentWaystone.getName(), store, ref);
                         }
+                    }
+                },
+                // On settings callback - opens settings page
+                () -> {
+                    if (currentWaystoneId != null) {
+                        openSettingsPage(playerRef, playerUuid, currentWaystoneId, store, ref);
                     }
                 }
         );
@@ -83,11 +89,9 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
      */
     private void openNamingPage(@Nonnull PlayerRef playerRef,
                                 @Nonnull String waystoneId,
-                                @Nonnull String currentName) {
-        Ref<EntityStore> ref = playerRef.getReference();
-        if (ref == null) return;
-
-        Store<EntityStore> store = ref.getStore();
+                                @Nonnull String currentName,
+                                @Nonnull Store<EntityStore> store,
+                                @Nonnull Ref<EntityStore> ref) {
         Player playerComponent = (Player) store.getComponent(ref, Player.getComponentType());
         if (playerComponent == null) return;
 
@@ -105,5 +109,32 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
         );
 
         playerComponent.getPageManager().openCustomPage(ref, store, namingPage);
+    }
+
+    /**
+     * Opens the settings page for a waystone.
+     */
+    private void openSettingsPage(@Nonnull PlayerRef playerRef,
+                                   @Nonnull String playerUuid,
+                                   @Nonnull String waystoneId,
+                                   @Nonnull Store<EntityStore> store,
+                                   @Nonnull Ref<EntityStore> ref) {
+        Player playerComponent = (Player) store.getComponent(ref, Player.getComponentType());
+        if (playerComponent == null) return;
+
+        Waystone waystone = WaystoneRegistry.get().get(waystoneId);
+        if (waystone == null) return;
+
+        WaystoneSettingsPage settingsPage = new WaystoneSettingsPage(
+                playerRef,
+                playerUuid,
+                waystoneId,
+                () -> {
+                    // Back callback - this supplier doesn't support going back to list
+                    // Just close the settings page
+                }
+        );
+
+        playerComponent.getPageManager().openCustomPage(ref, store, settingsPage);
     }
 }

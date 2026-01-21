@@ -29,6 +29,7 @@ $C.@PageOverlay {
         Style: $C.@DefaultInputFieldStyle;
         Background: $C.@InputBoxBackground;
         Anchor: (Top: 10, Height: 44);
+        MaxLength: 100;
         Padding: (Horizontal: 10);
         PlaceholderText: "Enter name...";
       }

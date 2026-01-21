@@ -9,7 +9,7 @@ Button #Button {
   );
 
   Label #Name {
-    Style: (RenderBold: true);
+    Style: (RenderBold: true, TextColor: #ffffff);
     FlexWeight: 1;
   }
 

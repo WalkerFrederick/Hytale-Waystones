@@ -61,34 +61,39 @@ public class WaystoneNamingPage extends InteractiveCustomUIPage<WaystoneNamingPa
     }
 
     @Nullable
+    private final String waystoneId;
+    @Nullable
     private final String currentName;
     private final Consumer<String> onNameSubmit;
     private final Runnable onCancel;
+
+    // Store the latest text field value
+    private String pendingName = "";
+    // Error message to display
+    private String errorMessage = null;
 
     /**
      * Creates a new WaystoneNamingPage.
      *
      * @param playerRef The player viewing the page
-     * @param waystoneId The ID of the waystone being named
+     * @param waystoneId The ID of the waystone being named (null for new waystones)
      * @param currentName The current name (null for new waystones)
      * @param isNewWaystone True if this is a newly placed waystone
      * @param onNameSubmit Callback when player submits a name
      * @param onCancel Callback when player cancels
      */
     public WaystoneNamingPage(@Nonnull PlayerRef playerRef,
-                              @Nonnull String waystoneId,
+                              @Nullable String waystoneId,
                               @Nullable String currentName,
                               boolean isNewWaystone,
                               @Nonnull Consumer<String> onNameSubmit,
                               @Nonnull Runnable onCancel) {
         super(playerRef, CustomPageLifetime.CanDismiss, NamingEventData.CODEC);
+        this.waystoneId = waystoneId;
         this.currentName = currentName;
         this.onNameSubmit = onNameSubmit;
         this.onCancel = onCancel;
     }
-
-    // Store the latest text field value
-    private String pendingName = "";
 
     @Override
     public void build(@Nonnull Ref<EntityStore> ref,
@@ -98,10 +103,16 @@ public class WaystoneNamingPage extends InteractiveCustomUIPage<WaystoneNamingPa
         // Load our custom UI template
         commandBuilder.append("Pages/WaystoneNamingPage.ui");
 
-        // Set placeholder text if there's a current name
+        // Pre-fill with current name if renaming
         if (currentName != null && !currentName.isEmpty()) {
-            commandBuilder.set("#NameInput.Text", currentName);
+            commandBuilder.set("#NameInput.Value", currentName);
             pendingName = currentName;
+        }
+
+        // Show error message if there is one
+        if (errorMessage != null) {
+            commandBuilder.set("#Error.Text", errorMessage);
+            commandBuilder.set("#Error.Visible", true);
         }
 
         // Bind TextField with ValueChanged to capture text as user types
@@ -150,13 +161,25 @@ public class WaystoneNamingPage extends InteractiveCustomUIPage<WaystoneNamingPa
 
         switch (action) {
             case "submit" -> {
-                // Use the stored pending name from ValueChange events
-                if (pendingName != null && !pendingName.trim().isEmpty()) {
-                    onNameSubmit.accept(pendingName.trim());
-                } else {
-                    // Use default name if empty
-                    onNameSubmit.accept("Waystone");
+                String nameToSubmit = (pendingName != null && !pendingName.trim().isEmpty()) 
+                        ? pendingName.trim() 
+                        : "Waystone";
+                
+                // Check name length (max 100 characters)
+                if (nameToSubmit.length() > 100) {
+                    errorMessage = "Name must be 100 characters or less";
+                    rebuild();
+                    return;
                 }
+                
+                // Check if name is already taken (exclude current waystone for renaming)
+                if (WaystoneRegistry.get().isNameTaken(nameToSubmit, waystoneId)) {
+                    errorMessage = "A waystone with this name already exists";
+                    rebuild();
+                    return;
+                }
+                
+                onNameSubmit.accept(nameToSubmit);
                 close();
             }
             case "cancel" -> {
@@ -169,5 +192,6 @@ public class WaystoneNamingPage extends InteractiveCustomUIPage<WaystoneNamingPa
     @Override
     public void onDismiss(@Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
         // If dismissed without submitting, treat as cancel
+        onCancel.run();
     }
 }

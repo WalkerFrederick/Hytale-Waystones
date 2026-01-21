@@ -188,7 +188,8 @@ public class WaystoneRegistry {
     public List<Waystone> getVisibleTo(@Nonnull String playerUuid) {
         return waystones.values().stream()
                 .filter(w -> w.isVisibleTo(playerUuid))
-                .sorted(Comparator.comparing(Waystone::getName))
+                .sorted(Comparator.comparingInt(Waystone::getPriority).reversed()
+                        .thenComparing(Waystone::getName, String.CASE_INSENSITIVE_ORDER))
                 .collect(Collectors.toList());
     }
 
@@ -203,7 +204,62 @@ public class WaystoneRegistry {
     }
 
     /**
+     * Checks if a waystone name is already taken.
+     * 
+     * @param name The name to check
+     * @return true if the name is already in use
+     */
+    public boolean isNameTaken(@Nonnull String name) {
+        return isNameTaken(name, null);
+    }
+
+    /**
+     * Checks if a waystone name is already taken, excluding a specific waystone.
+     * Used for renaming to allow keeping the same name.
+     * 
+     * @param name The name to check
+     * @param excludeId The waystone ID to exclude from the check (can be null)
+     * @return true if the name is already in use by another waystone
+     */
+    public boolean isNameTaken(@Nonnull String name, @Nullable String excludeId) {
+        String normalizedName = name.trim().toLowerCase();
+        for (Waystone waystone : waystones.values()) {
+            if (excludeId != null && waystone.getId().equals(excludeId)) {
+                continue;
+            }
+            if (waystone.getName().trim().toLowerCase().equals(normalizedName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generates a unique name by appending a number if needed.
+     * 
+     * @param baseName The desired name
+     * @param excludeId The waystone ID to exclude (for renaming)
+     * @return A unique name (either the original or with a number suffix)
+     */
+    @Nonnull
+    public String generateUniqueName(@Nonnull String baseName, @Nullable String excludeId) {
+        if (!isNameTaken(baseName, excludeId)) {
+            return baseName;
+        }
+        
+        int counter = 2;
+        String newName;
+        do {
+            newName = baseName + " " + counter;
+            counter++;
+        } while (isNameTaken(newName, excludeId));
+        
+        return newName;
+    }
+
+    /**
      * Updates a waystone's name.
+     * Note: Name uniqueness should be validated before calling this method.
      */
     public void updateName(@Nonnull String waystoneId, @Nonnull String newName) {
         Waystone waystone = waystones.get(waystoneId);
@@ -211,6 +267,31 @@ public class WaystoneRegistry {
             waystone.setName(newName);
             save();
             LOGGER.atInfo().log("Updated waystone name to: %s", newName);
+        }
+    }
+
+    /**
+     * Updates a waystone's priority.
+     * Lower numbers appear first in the list.
+     */
+    public void updatePriority(@Nonnull String waystoneId, int priority) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setPriority(priority);
+            save();
+            LOGGER.atInfo().log("Updated waystone priority to: %d", priority);
+        }
+    }
+
+    /**
+     * Updates a waystone's text color.
+     */
+    public void updateTextColor(@Nonnull String waystoneId, @Nonnull String textColor) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setTextColor(textColor);
+            save();
+            LOGGER.atInfo().log("Updated waystone text color to: %s", textColor);
         }
     }
 
@@ -224,6 +305,54 @@ public class WaystoneRegistry {
             save();
             LOGGER.atInfo().log("Toggled waystone visibility: %s is now %s",
                     waystone.getName(), waystone.isPublic() ? "public" : "private");
+        }
+    }
+
+    /**
+     * Adds an editor to a waystone.
+     */
+    public void addEditor(@Nonnull String waystoneId, @Nonnull String playerUuid) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.addEditor(playerUuid);
+            save();
+            LOGGER.atInfo().log("Added editor %s to waystone %s", playerUuid, waystone.getName());
+        }
+    }
+
+    /**
+     * Removes an editor from a waystone.
+     */
+    public void removeEditor(@Nonnull String waystoneId, @Nonnull String playerUuid) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.removeEditor(playerUuid);
+            save();
+            LOGGER.atInfo().log("Removed editor %s from waystone %s", playerUuid, waystone.getName());
+        }
+    }
+
+    /**
+     * Adds a viewer to a waystone.
+     */
+    public void addViewer(@Nonnull String waystoneId, @Nonnull String playerUuid) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.addViewer(playerUuid);
+            save();
+            LOGGER.atInfo().log("Added viewer %s to waystone %s", playerUuid, waystone.getName());
+        }
+    }
+
+    /**
+     * Removes a viewer from a waystone.
+     */
+    public void removeViewer(@Nonnull String waystoneId, @Nonnull String playerUuid) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.removeViewer(playerUuid);
+            save();
+            LOGGER.atInfo().log("Removed viewer %s from waystone %s", playerUuid, waystone.getName());
         }
     }
 

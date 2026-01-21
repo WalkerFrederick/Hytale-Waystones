@@ -22,6 +22,12 @@ waystone.list.private = Private
 waystone.list.owned = (Yours)
 waystone.list.teleport = Teleport
 
+# Waystone UI - Settings
+waystone.settings.title = Waystone Settings
+waystone.settings.rename = Rename
+waystone.settings.toggleVisibility = Toggle Visibility
+waystone.settings.delete = Delete Waystone
+
 # Waystone Messages
 waystone.created = Waystone created!
 waystone.renamed = Waystone renamed to: {name}

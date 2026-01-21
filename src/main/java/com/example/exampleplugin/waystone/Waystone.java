@@ -16,8 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.Instant;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Represents a Waystone teleportation point in the world.
@@ -30,7 +29,7 @@ public class Waystone {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Codec<Waystone> createCodec() {
-        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
+        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
                 .addField(new KeyedCodec("Id", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).id = (String)s, w -> ((Waystone)w).id))
                 .addField(new KeyedCodec("Name", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).name = (String)s, w -> ((Waystone)w).name))
                 .addField(new KeyedCodec("World", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).worldName = (String)s, w -> ((Waystone)w).worldName))
@@ -41,7 +40,15 @@ public class Waystone {
                 .addField(new KeyedCodec("OwnerUuid", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).ownerUuid = (String)s, w -> ((Waystone)w).ownerUuid))
                 .addField(new KeyedCodec("OwnerName", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).ownerName = (String)s, w -> ((Waystone)w).ownerName))
                 .addField(new KeyedCodec("IsPublic", (Codec) Codec.BOOLEAN), (w, v) -> ((Waystone)w).isPublic = (Boolean)v, w -> ((Waystone)w).isPublic))
+                .append(new KeyedCodec("Priority", (Codec) Codec.INTEGER, false, true), (w, v) -> ((Waystone)w).priority = v != null ? (Integer)v : 0, w -> ((Waystone)w).priority)
+                .add())
+                .append(new KeyedCodec("Editors", (Codec) Codec.STRING_ARRAY, false, true), (w, v) -> ((Waystone)w).editors = v != null ? (String[])v : new String[0], w -> ((Waystone)w).editors)
+                .add())
+                .append(new KeyedCodec("Viewers", (Codec) Codec.STRING_ARRAY, false, true), (w, v) -> ((Waystone)w).viewers = v != null ? (String[])v : new String[0], w -> ((Waystone)w).viewers)
+                .add())
                 .append(new KeyedCodec("CreatedAt", (Codec) Codec.INSTANT), (w, i) -> ((Waystone)w).createdAt = (Instant)i, w -> ((Waystone)w).createdAt)
+                .add())
+                .append(new KeyedCodec("TextColor", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).textColor = v != null ? (String)v : "#ffffff", w -> ((Waystone)w).textColor)
                 .add()
                 .build();
     }
@@ -61,7 +68,11 @@ public class Waystone {
     private String ownerUuid;
     private String ownerName;
     private boolean isPublic;
+    private int priority = 0;
+    private String[] editors = new String[0];
+    private String[] viewers = new String[0];
     private Instant createdAt;
+    private String textColor = "#ffffff";
 
     /**
      * Default constructor for codec deserialization.
@@ -170,23 +181,142 @@ public class Waystone {
         this.isPublic = isPublic;
     }
 
+    public int getPriority() {
+        return priority;
+    }
+
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+
     @Nonnull
     public Instant getCreatedAt() {
         return createdAt;
     }
 
-    /**
-     * Checks if this waystone is visible to the given player.
-     */
-    public boolean isVisibleTo(@Nonnull String playerUuid) {
-        return isPublic || ownerUuid.equals(playerUuid);
+    @Nonnull
+    public String getTextColor() {
+        return textColor != null ? textColor : "#ffffff";
+    }
+
+    public void setTextColor(@Nonnull String textColor) {
+        this.textColor = textColor;
     }
 
     /**
-     * Checks if the given player is the owner of this waystone.
+     * Checks if this waystone is visible to the given player.
+     * A waystone is visible if:
+     * - It's public, OR
+     * - The player is the creator/owner (by UUID)
+     */
+    public boolean isVisibleTo(@Nonnull String playerUuid) {
+        if (isPublic) return true;
+        return ownerUuid.equals(playerUuid);
+    }
+
+    /**
+     * Checks if the given player can edit this waystone.
+     * A player can edit if they are the creator/owner.
+     */
+    public boolean canEdit(@Nonnull String playerUuid) {
+        return ownerUuid.equals(playerUuid);
+    }
+
+    /**
+     * Checks if the given player is the owner/creator of this waystone.
      */
     public boolean isOwnedBy(@Nonnull String playerUuid) {
         return ownerUuid.equals(playerUuid);
+    }
+
+    /**
+     * Checks if the given username is an editor.
+     */
+    public boolean isEditor(@Nonnull String username) {
+        for (String editor : editors) {
+            if (editor.equalsIgnoreCase(username)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if the given username is a viewer.
+     */
+    public boolean isViewer(@Nonnull String username) {
+        for (String viewer : viewers) {
+            if (viewer.equalsIgnoreCase(username)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Gets the list of editor UUIDs.
+     */
+    @Nonnull
+    public String[] getEditors() {
+        return editors;
+    }
+
+    /**
+     * Sets the list of editor UUIDs.
+     */
+    public void setEditors(@Nonnull String[] editors) {
+        this.editors = editors;
+    }
+
+    /**
+     * Adds an editor by UUID.
+     */
+    public void addEditor(@Nonnull String playerUuid) {
+        if (!isEditor(playerUuid)) {
+            String[] newEditors = Arrays.copyOf(editors, editors.length + 1);
+            newEditors[editors.length] = playerUuid;
+            this.editors = newEditors;
+        }
+    }
+
+    /**
+     * Removes an editor by UUID.
+     */
+    public void removeEditor(@Nonnull String playerUuid) {
+        List<String> list = new ArrayList<>(Arrays.asList(editors));
+        list.remove(playerUuid);
+        this.editors = list.toArray(new String[0]);
+    }
+
+    /**
+     * Gets the list of viewer UUIDs.
+     */
+    @Nonnull
+    public String[] getViewers() {
+        return viewers;
+    }
+
+    /**
+     * Sets the list of viewer UUIDs.
+     */
+    public void setViewers(@Nonnull String[] viewers) {
+        this.viewers = viewers;
+    }
+
+    /**
+     * Adds a viewer by UUID.
+     */
+    public void addViewer(@Nonnull String playerUuid) {
+        if (!isViewer(playerUuid)) {
+            String[] newViewers = Arrays.copyOf(viewers, viewers.length + 1);
+            newViewers[viewers.length] = playerUuid;
+            this.viewers = newViewers;
+        }
+    }
+
+    /**
+     * Removes a viewer by UUID.
+     */
+    public void removeViewer(@Nonnull String playerUuid) {
+        List<String> list = new ArrayList<>(Arrays.asList(viewers));
+        list.remove(playerUuid);
+        this.viewers = list.toArray(new String[0]);
     }
 
     /**
