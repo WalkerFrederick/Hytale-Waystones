@@ -1,0 +1,97 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Warp_Block.name",
+    "Description": "server.items.Warp_Block.description"
+  },
+  "Quality": "Epic",
+  "PlayerAnimationsId": "Block",
+  "Categories": [
+    "Blocks.Structural"
+  ],
+  "Icon": "Icons/ItemsGenerated/Warp_Statue.png",
+  "IconProperties": {
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Scale": 0.29,
+    "Translation": [
+      0,
+      -33.51
+    ]
+  },
+  "BlockType": {
+    "BlockParticleSetId": "Stone",
+    "ParticleColor": "#bbbbaf",
+    "BlockSoundSetId": "Stone",
+    "CustomModel": "Blocks/Warp_Statue/Warp_Statue.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Warp_Statue/Textures/default.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Flags": {
+      "IsUsable": true
+    },
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Rocks"
+      }
+    },
+    "HitboxType": "Statue",
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "VariantRotation": "NESW",
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "OpenCustomUI",
+            "Page": {
+              "Id": "Waystone"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ]
+  },
+  "Scale": 0.6,
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "MaxStack": 1,
+  "Recipe": {
+    "Input": [
+      {
+        "ResourceTypeId": "Rock",
+        "Quantity": 10
+      },
+      {
+        "ItemId": "Ingredient_Voidheart",
+        "Quantity": 1
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Type": "Crafting",
+        "Categories": [
+          "Workbench_Tinkering"
+        ],
+        "Id": "Workbench"
+      }
+    ]
+  }
+}

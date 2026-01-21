@@ -1,0 +1,29 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {}
+
+$C.@Container {
+  Anchor: (Width: 600, Height: 700);
+
+  #Title {
+    Group {
+      $C.@Title #TitleText {
+        @Text = %server.waystone.list.title;
+      }
+
+      $C.@HeaderSearch {}
+    }
+  }
+
+  #Content {
+    LayoutMode: Left;
+
+    Group #WaystoneList {
+      FlexWeight: 1;
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+    }
+  }
+}
+
+$C.@BackButton {}

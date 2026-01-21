@@ -1,1 +1,31 @@
-items.Example_Block.name=Example Block
+# Waystone Block
+items.Warp_Block.name = Waystone
+items.Warp_Block.description = Place to create a teleportation waystone. Use to access the waystone network.
+
+# Waystone UI - Naming
+waystone.naming.title = Name Your Waystone
+waystone.naming.title.rename = Rename Waystone
+waystone.naming.prompt = Waystone Name
+waystone.naming.placeholder = Enter waystone name...
+waystone.naming.submit = Create
+waystone.naming.submit.rename = Rename
+waystone.naming.cancel = Cancel
+
+# Waystone UI - List
+waystone.list.title = Waystones
+waystone.list.empty = No waystones available
+waystone.list.rename = Rename
+waystone.list.delete = Delete
+waystone.list.visibility = Toggle Visibility
+waystone.list.public = Public
+waystone.list.private = Private
+waystone.list.owned = (Yours)
+waystone.list.teleport = Teleport
+
+# Waystone Messages
+waystone.created = Waystone created!
+waystone.renamed = Waystone renamed to: {name}
+waystone.deleted = Waystone deleted
+waystone.visibility.public = Waystone is now public
+waystone.visibility.private = Waystone is now private
+waystone.teleport.blocked = Cannot teleport - destination is blocked!

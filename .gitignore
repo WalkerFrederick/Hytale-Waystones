@@ -33,3 +33,6 @@ build/
 
 ### Misc ###
 /run/
+
+### Documentation Reference (large decompiled files) ###
+DocumentationAndReference/
