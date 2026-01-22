@@ -32,7 +32,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         private static BuilderCodec<SettingsEventData> createCodec() {
-            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
+            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
                     .append(new KeyedCodec("Action", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).action = (String)s, e -> ((SettingsEventData)e).action)
                     .add())
@@ -45,6 +45,9 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     .append(new KeyedCodec("@VisibilityInput", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).visibility = (String)s, e -> ((SettingsEventData)e).visibility)
                     .add())
+                    .append(new KeyedCodec("@DirectionInput", (Codec) Codec.STRING),
+                            (e, s) -> ((SettingsEventData)e).direction = (String)s, e -> ((SettingsEventData)e).direction)
+                    .add())
                     .build();
         }
 
@@ -56,6 +59,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         private String name;
         private String priority;
         private String visibility;
+        private String direction;
 
         public String getAction() {
             return action;
@@ -72,6 +76,10 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         public String getVisibility() {
             return visibility;
         }
+
+        public String getDirection() {
+            return direction;
+        }
     }
 
     private final PlayerRef playerRef;
@@ -83,6 +91,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
     // Track the pending values from text fields
     private String pendingName;
     private int pendingPriority;
+    private String pendingDirection;
     // Error message to display
     private String errorMessage = null;
 
@@ -103,6 +112,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         Waystone waystone = WaystoneRegistry.get().get(waystoneId);
         this.pendingName = waystone != null ? waystone.getName() : "";
         this.pendingPriority = waystone != null ? waystone.getPriority() : 0;
+        this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
     }
 
     @Override
@@ -123,6 +133,15 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     new DropdownEntryInfo(LocalizableString.fromString("Private"), "private")
             });
             commandBuilder.set("#Visibility #Input.Value", waystone.isPublic() ? "public" : "private");
+
+            // Set up teleport direction dropdown
+            commandBuilder.set("#TeleportDirection #DirectionInput.Entries", new DropdownEntryInfo[] {
+                    new DropdownEntryInfo(LocalizableString.fromString("North"), "north"),
+                    new DropdownEntryInfo(LocalizableString.fromString("South"), "south"),
+                    new DropdownEntryInfo(LocalizableString.fromString("East"), "east"),
+                    new DropdownEntryInfo(LocalizableString.fromString("West"), "west")
+            });
+            commandBuilder.set("#TeleportDirection #DirectionInput.Value", waystone.getTeleportDirection());
         }
 
         // Show error message if there is one
@@ -144,6 +163,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 CustomUIEventBindingType.ValueChanged,
                 "#Visibility #Input",
                 EventData.of("@VisibilityInput", "#Visibility #Input.Value"),
+                false
+        );
+
+        // Bind direction dropdown value changes
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#TeleportDirection #DirectionInput",
+                EventData.of("@DirectionInput", "#TeleportDirection #DirectionInput.Value"),
                 false
         );
 
@@ -208,6 +235,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 WaystoneRegistry.get().toggleVisibility(waystoneId);
                 rebuild();
             }
+            return;
+        }
+
+        // Handle direction dropdown value changes
+        if (event.getDirection() != null) {
+            pendingDirection = event.getDirection();
+            WaystoneRegistry.get().updateTeleportDirection(waystoneId, pendingDirection);
+            sendUpdate(null, false);
             return;
         }
 

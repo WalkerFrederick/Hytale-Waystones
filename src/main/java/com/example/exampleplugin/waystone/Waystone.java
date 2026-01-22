@@ -29,7 +29,7 @@ public class Waystone {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Codec<Waystone> createCodec() {
-        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
+        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
                 .addField(new KeyedCodec("Id", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).id = (String)s, w -> ((Waystone)w).id))
                 .addField(new KeyedCodec("Name", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).name = (String)s, w -> ((Waystone)w).name))
                 .addField(new KeyedCodec("World", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).worldName = (String)s, w -> ((Waystone)w).worldName))
@@ -49,6 +49,8 @@ public class Waystone {
                 .append(new KeyedCodec("CreatedAt", (Codec) Codec.INSTANT), (w, i) -> ((Waystone)w).createdAt = (Instant)i, w -> ((Waystone)w).createdAt)
                 .add())
                 .append(new KeyedCodec("TextColor", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).textColor = v != null ? (String)v : "#ffffff", w -> ((Waystone)w).textColor)
+                .add())
+                .append(new KeyedCodec("TeleportDirection", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).teleportDirection = v != null ? (String)v : "north", w -> ((Waystone)w).teleportDirection)
                 .add()
                 .build();
     }
@@ -73,6 +75,7 @@ public class Waystone {
     private String[] viewers = new String[0];
     private Instant createdAt;
     private String textColor = "#ffffff";
+    private String teleportDirection = "north"; // north, south, east, west
 
     /**
      * Default constructor for codec deserialization.
@@ -201,6 +204,15 @@ public class Waystone {
 
     public void setTextColor(@Nonnull String textColor) {
         this.textColor = textColor;
+    }
+
+    @Nonnull
+    public String getTeleportDirection() {
+        return teleportDirection != null ? teleportDirection : "north";
+    }
+
+    public void setTeleportDirection(@Nonnull String teleportDirection) {
+        this.teleportDirection = teleportDirection;
     }
 
     /**
@@ -394,7 +406,7 @@ public class Waystone {
 
     /**
      * Converts this waystone to a Teleport component for teleporting players.
-     * The player will spawn south of the waystone (+Z), facing north toward it.
+     * The spawn position and facing direction are based on the configured teleportDirection.
      */
     @Nullable
     public Teleport toTeleport() {
@@ -404,19 +416,46 @@ public class Waystone {
             return null;
         }
         
-        // Always spawn south of the block (+Z direction), facing north toward it
-        // This is predictable and consistent regardless of block rotation
-        double teleportX = x + 0.5;           // Center X
-        double teleportY = y + 1.0;           // One block above waystone
-        double teleportZ = z + 0.5 + 1.5;     // 1.5 blocks south (+Z)
-        Vector3d position = new Vector3d(teleportX, teleportY, teleportZ);
-        
-        // Player faces north (toward the waystone) - yaw = 0 in Hytale means facing -Z (north)
+        // Calculate spawn position and facing based on configured direction
+        double teleportX = x + 0.5;  // Center X
+        double teleportY = y + 1.0;  // One block above waystone
+        double teleportZ = z + 0.5;  // Center Z
         float playerYaw = 0f;
+        
+        String direction = getTeleportDirection();
+        switch (direction) {
+            case "north" -> {
+                // Face north, spawn south of statue
+                teleportZ += 1;
+                playerYaw = 0f;  // Facing -Z (north)
+            }
+            case "south" -> {
+                // Face south, spawn north of statue
+                teleportZ -= 1;
+                playerYaw = (float) Math.PI;  // Facing +Z (south)
+            }
+            case "east" -> {
+                // Face east, spawn west of statue
+                teleportX -= 1;
+                playerYaw = (float) (-Math.PI / 2);  // Facing east
+            }
+            case "west" -> {
+                // Face west, spawn east of statue
+                teleportX += 1;
+                playerYaw = (float) (Math.PI / 2);  // Facing west
+            }
+            default -> {
+                // Default to north
+                teleportZ += 1;
+                playerYaw = 0f;
+            }
+        }
+        
+        Vector3d position = new Vector3d(teleportX, teleportY, teleportZ);
         Vector3f rotation = new Vector3f(0, playerYaw, 0);
         
         System.out.println("[Waystone] toTeleport: name='" + name + "' world='" + worldName + 
-                "' block pos=(" + x + ", " + y + ", " + z + ")" +
+                "' direction='" + direction + "' block pos=(" + x + ", " + y + ", " + z + ")" +
                 " teleport pos=(" + teleportX + ", " + teleportY + ", " + teleportZ + ")");
         
         return new Teleport(world, position, rotation);

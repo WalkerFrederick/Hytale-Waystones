@@ -44,6 +44,10 @@
     "HitboxType": "Statue",
     "Material": "Solid",
     "Opacity": "Transparent",
+    "Light": {
+      "Color": "#6af",
+      "Radius": 4
+    },
     "Support": {
       "Down": [
         {

@@ -296,6 +296,18 @@ public class WaystoneRegistry {
     }
 
     /**
+     * Updates a waystone's teleport direction.
+     */
+    public void updateTeleportDirection(@Nonnull String waystoneId, @Nonnull String direction) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setTeleportDirection(direction);
+            save();
+            LOGGER.atInfo().log("Updated waystone teleport direction to: %s", direction);
+        }
+    }
+
+    /**
      * Toggles a waystone's visibility.
      */
     public void toggleVisibility(@Nonnull String waystoneId) {

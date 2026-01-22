@@ -64,6 +64,27 @@ $C.@PageOverlay {
           @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
         }
       }
+
+      // Teleport Direction dropdown section
+      Group #TeleportDirection {
+        LayoutMode: Top;
+        Anchor: (Top: 16);
+
+        Label {
+          Text: "Teleport Direction";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+        }
+
+        Label {
+          Text: "Direction players face when teleporting here";
+          Style: (FontSize: 12, TextColor: #6a7a8a);
+          Anchor: (Top: 4);
+        }
+
+        $C.@DropdownBox #DirectionInput {
+          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+        }
+      }
       
       // Priority section (ops only)
       Group #PrioritySection {
