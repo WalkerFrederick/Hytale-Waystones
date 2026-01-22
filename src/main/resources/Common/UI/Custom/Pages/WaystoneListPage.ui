@@ -17,6 +17,7 @@ $C.@PageOverlay {
       LayoutMode: Top;
       Padding: (Horizontal: 20);
 
+      // Edit button at top
       Group {
         Anchor: (Top: 16, Height: 44);
 
@@ -41,42 +42,76 @@ $C.@PageOverlay {
         }
       }
 
-      // Public Waystones Section
-      Label {
-        Text: "Public Waystones";
-        Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+      // Tab buttons
+      Group {
+        LayoutMode: Left;
+        Anchor: (Top: 16, Height: 36);
+
+        $C.@SecondaryTextButton #TabPublic {
+          Text: "Public";
+          FlexWeight: 1;
+        }
+
+        Group {
+          Anchor: (Width: 5);
+        }
+
+        $C.@SecondaryTextButton #TabPrivate {
+          Text: "Private";
+          FlexWeight: 1;
+        }
+      }
+
+      // Public Waystones Content
+      Group #PublicContent {
+        Visible: true;
+        FlexWeight: 1;
+        LayoutMode: Top;
         Anchor: (Top: 16);
+
+        Label {
+          Text: "Public Waystones";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+        }
+
+        Label #NoPublic {
+          Text: "No public waystones";
+          Style: (FontSize: 14, TextColor: #6a7a8a, HorizontalAlignment: Center);
+          Anchor: (Top: 16);
+          Visible: false;
+        }
+
+        Group #PublicList {
+          LayoutMode: TopScrolling;
+          ScrollbarStyle: $C.@DefaultScrollbarStyle;
+          Anchor: (Top: 8, Height: 430);
+        }
       }
 
-      Group #PublicList {
-        Anchor: (Top: 8, Height: 200);
-        LayoutMode: TopScrolling;
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-      }
+      // Private Waystones Content
+      Group #PrivateContent {
+        Visible: false;
+        FlexWeight: 1;
+        LayoutMode: Top;
+        Anchor: (Top: 16);
 
-      Label #NoPublic {
-        Text: "No public waystones";
-        Style: (FontSize: 12, TextColor: #6a7a8a);
-        Anchor: (Top: 4);
-      }
+        Label {
+          Text: "Private Waystones";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+        }
 
-      // Private Waystones Section
-      Label {
-        Text: "Your Private Waystones";
-        Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
-        Anchor: (Top: 20);
-      }
+        Label #NoPrivate {
+          Text: "No private waystones";
+          Style: (FontSize: 14, TextColor: #6a7a8a, HorizontalAlignment: Center);
+          Anchor: (Top: 16);
+          Visible: false;
+        }
 
-      Group #PrivateList {
-        Anchor: (Top: 8, Height: 200);
-        LayoutMode: TopScrolling;
-        ScrollbarStyle: $C.@DefaultScrollbarStyle;
-      }
-
-      Label #NoPrivate {
-        Text: "No private waystones";
-        Style: (FontSize: 12, TextColor: #6a7a8a);
-        Anchor: (Top: 4);
+        Group #PrivateList {
+          LayoutMode: TopScrolling;
+          ScrollbarStyle: $C.@DefaultScrollbarStyle;
+          Anchor: (Top: 8, Height: 430);
+        }
       }
 
     }

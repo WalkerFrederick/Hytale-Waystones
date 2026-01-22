@@ -65,23 +65,44 @@ $C.@PageOverlay {
         }
       }
 
-      // Teleport Direction dropdown section
+      // Side to Teleport To dropdown section
       Group #TeleportDirection {
         LayoutMode: Top;
         Anchor: (Top: 16);
 
         Label {
-          Text: "Teleport Direction";
+          Text: "Side to Teleport To";
           Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
         }
 
         Label {
-          Text: "Direction players face when teleporting here";
+          Text: "Which side of the statue players appear on";
           Style: (FontSize: 12, TextColor: #6a7a8a);
           Anchor: (Top: 4);
         }
 
         $C.@DropdownBox #DirectionInput {
+          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+        }
+      }
+
+      // Player Orientation dropdown section
+      Group #PlayerOrientation {
+        LayoutMode: Top;
+        Anchor: (Top: 16);
+
+        Label {
+          Text: "Player Orientation";
+          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+        }
+
+        Label {
+          Text: "Direction players face when teleporting";
+          Style: (FontSize: 12, TextColor: #6a7a8a);
+          Anchor: (Top: 4);
+        }
+
+        $C.@DropdownBox #OrientationInput {
           @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
         }
       }
@@ -92,7 +113,7 @@ $C.@PageOverlay {
         Visible: false;
 
         Label {
-          Text: "Sort Priority";
+          Text: "Sort Priority (Op Only)";
           Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
           Anchor: (Top: 16);
         }

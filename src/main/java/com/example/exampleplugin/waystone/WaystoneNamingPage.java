@@ -161,9 +161,14 @@ public class WaystoneNamingPage extends InteractiveCustomUIPage<WaystoneNamingPa
 
         switch (action) {
             case "submit" -> {
-                String nameToSubmit = (pendingName != null && !pendingName.trim().isEmpty()) 
-                        ? pendingName.trim() 
-                        : "Waystone";
+                // Validate name is not empty
+                if (pendingName == null || pendingName.trim().isEmpty()) {
+                    errorMessage = "Please enter a name for the waystone";
+                    rebuild();
+                    return;
+                }
+                
+                String nameToSubmit = pendingName.trim();
                 
                 // Check name length (max 100 characters)
                 if (nameToSubmit.length() > 100) {

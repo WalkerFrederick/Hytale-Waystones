@@ -29,7 +29,7 @@ public class Waystone {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Codec<Waystone> createCodec() {
-        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
+        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
                 .addField(new KeyedCodec("Id", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).id = (String)s, w -> ((Waystone)w).id))
                 .addField(new KeyedCodec("Name", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).name = (String)s, w -> ((Waystone)w).name))
                 .addField(new KeyedCodec("World", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).worldName = (String)s, w -> ((Waystone)w).worldName))
@@ -51,6 +51,8 @@ public class Waystone {
                 .append(new KeyedCodec("TextColor", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).textColor = v != null ? (String)v : "#ffffff", w -> ((Waystone)w).textColor)
                 .add())
                 .append(new KeyedCodec("TeleportDirection", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).teleportDirection = v != null ? (String)v : "north", w -> ((Waystone)w).teleportDirection)
+                .add())
+                .append(new KeyedCodec("PlayerOrientation", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).playerOrientation = v != null ? (String)v : "away", w -> ((Waystone)w).playerOrientation)
                 .add()
                 .build();
     }
@@ -76,6 +78,7 @@ public class Waystone {
     private Instant createdAt;
     private String textColor = "#ffffff";
     private String teleportDirection = "north"; // north, south, east, west
+    private String playerOrientation = "away"; // away, towards
 
     /**
      * Default constructor for codec deserialization.
@@ -213,6 +216,15 @@ public class Waystone {
 
     public void setTeleportDirection(@Nonnull String teleportDirection) {
         this.teleportDirection = teleportDirection;
+    }
+
+    @Nonnull
+    public String getPlayerOrientation() {
+        return playerOrientation != null ? playerOrientation : "away";
+    }
+
+    public void setPlayerOrientation(@Nonnull String playerOrientation) {
+        this.playerOrientation = playerOrientation;
     }
 
     /**
@@ -416,46 +428,57 @@ public class Waystone {
             return null;
         }
         
-        // Calculate spawn position and facing based on configured direction
+        // Calculate spawn position based on configured side
         double teleportX = x + 0.5;  // Center X
-        double teleportY = y + 1.0;  // One block above waystone
+        double teleportY = y + 0.5;  // One block above waystone
         double teleportZ = z + 0.5;  // Center Z
-        float playerYaw = 0f;
         
-        String direction = getTeleportDirection();
-        switch (direction) {
+        String side = getTeleportDirection();
+        String orientation = getPlayerOrientation();
+        
+        // Determine spawn position based on side
+        switch (side) {
+            case "north" -> teleportZ -= 1.1;// Spawn north of statue (-Z)
+            case "south" -> teleportZ += 1.1;  // Spawn south of statue (+Z)
+            case "east" -> teleportX += 1.1;   // Spawn east of statue (+X)
+            case "west" -> teleportX -= 1.1;   // Spawn west of statue (-X)
+            default -> teleportZ -= 1.1;       // Default to north
+        }
+        
+        // Determine facing direction based on orientation
+        // "away" = face away from statue, "towards" = face towards statue
+        float playerYaw = 0f;
+        boolean facingTowards = "towards".equals(orientation);
+        
+        switch (side) {
             case "north" -> {
-                // Face north, spawn south of statue
-                teleportZ += 1;
-                playerYaw = 0f;  // Facing -Z (north)
+                // Spawned north of statue
+                // Away = face north (-Z), Towards = face south (+Z)
+                playerYaw = facingTowards ? (float) Math.PI : 0f;
             }
             case "south" -> {
-                // Face south, spawn north of statue
-                teleportZ -= 1;
-                playerYaw = (float) Math.PI;  // Facing +Z (south)
+                // Spawned south of statue
+                // Away = face south (+Z), Towards = face north (-Z)
+                playerYaw = facingTowards ? 0f : (float) Math.PI;
             }
             case "east" -> {
-                // Face east, spawn west of statue
-                teleportX -= 1;
-                playerYaw = (float) (-Math.PI / 2);  // Facing east
+                // Spawned east of statue
+                // Away = face east (+X), Towards = face west (-X)
+                playerYaw = facingTowards ? (float) (Math.PI / 2) : (float) (-Math.PI / 2);
             }
             case "west" -> {
-                // Face west, spawn east of statue
-                teleportX += 1;
-                playerYaw = (float) (Math.PI / 2);  // Facing west
+                // Spawned west of statue
+                // Away = face west (-X), Towards = face east (+X)
+                playerYaw = facingTowards ? (float) (-Math.PI / 2) : (float) (Math.PI / 2);
             }
-            default -> {
-                // Default to north
-                teleportZ += 1;
-                playerYaw = 0f;
-            }
+            default -> playerYaw = facingTowards ? (float) Math.PI : 0f;
         }
         
         Vector3d position = new Vector3d(teleportX, teleportY, teleportZ);
         Vector3f rotation = new Vector3f(0, playerYaw, 0);
         
         System.out.println("[Waystone] toTeleport: name='" + name + "' world='" + worldName + 
-                "' direction='" + direction + "' block pos=(" + x + ", " + y + ", " + z + ")" +
+                "' side='" + side + "' orientation='" + orientation + "' block pos=(" + x + ", " + y + ", " + z + ")" +
                 " teleport pos=(" + teleportX + ", " + teleportY + ", " + teleportZ + ")");
         
         return new Teleport(world, position, rotation);

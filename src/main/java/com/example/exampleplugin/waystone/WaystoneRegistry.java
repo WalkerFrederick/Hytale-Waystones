@@ -308,6 +308,18 @@ public class WaystoneRegistry {
     }
 
     /**
+     * Updates a waystone's player orientation.
+     */
+    public void updatePlayerOrientation(@Nonnull String waystoneId, @Nonnull String orientation) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setPlayerOrientation(orientation);
+            save();
+            LOGGER.atInfo().log("Updated waystone player orientation to: %s", orientation);
+        }
+    }
+
+    /**
      * Toggles a waystone's visibility.
      */
     public void toggleVisibility(@Nonnull String waystoneId) {

@@ -25,10 +25,10 @@
     "BlockParticleSetId": "Stone",
     "ParticleColor": "#bbbbaf",
     "BlockSoundSetId": "Stone",
-    "CustomModel": "Blocks/Warp_Statue/Warp_Statue.blockymodel",
+    "CustomModel": "Blocks/Warp_Statue/waystone.blockymodel",
     "CustomModelTexture": [
       {
-        "Texture": "Blocks/Warp_Statue/Textures/default.png",
+        "Texture": "Blocks/Warp_Statue/Textures/waystone.png",
         "Weight": 1
       }
     ],
@@ -41,13 +41,20 @@
         "GatherType": "Rocks"
       }
     },
-    "HitboxType": "Statue",
+    "HitboxType": "Waystone",
     "Material": "Solid",
     "Opacity": "Transparent",
     "Light": {
-      "Color": "#6af",
-      "Radius": 4
+      "Color": "#74b7c2"
     },
+    "Looping": true,
+    "Particles": [
+      {
+        "SystemId": "Fire_Blue",
+        "TargetNodeName": "Emiter",
+        "Scale": 0.85
+      }
+    ],
     "Support": {
       "Down": [
         {

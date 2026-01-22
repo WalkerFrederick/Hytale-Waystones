@@ -86,6 +86,8 @@ public class WaystoneListPage extends CustomUIPage {
     private String searchQuery = "";
     // Cache the current list of waystones for index-based lookup
     private List<Waystone> currentWaystones = List.of();
+    // Track which tab is currently selected: "public" or "private"
+    private String currentTab = "public";
 
     /**
      * Creates a new WaystoneListPage.
@@ -141,6 +143,22 @@ public class WaystoneListPage extends CustomUIPage {
                 EventData.of("Action", "close")
         );
 
+        // Bind tab buttons
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#TabPublic",
+                EventData.of("Action", "tab_public")
+        );
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#TabPrivate",
+                EventData.of("Action", "tab_private")
+        );
+
+        // Set tab visibility based on current tab
+        commandBuilder.set("#PublicContent.Visible", "public".equals(currentTab));
+        commandBuilder.set("#PrivateContent.Visible", "private".equals(currentTab));
+
         // Get waystones visible to this player and split into public/private
         List<Waystone> allWaystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
 
@@ -168,20 +186,20 @@ public class WaystoneListPage extends CustomUIPage {
         this.currentWaystones = combinedList;
 
         // Clear the lists
-        commandBuilder.clear("#PublicList");
-        commandBuilder.clear("#PrivateList");
+        commandBuilder.clear("#PublicContent #PublicList");
+        commandBuilder.clear("#PrivateContent #PrivateList");
 
         // Populate public waystones
         if (publicWaystones.isEmpty()) {
-            commandBuilder.set("#NoPublic.Visible", true);
+            commandBuilder.set("#PublicContent #NoPublic.Visible", true);
         } else {
-            commandBuilder.set("#NoPublic.Visible", false);
+            commandBuilder.set("#PublicContent #NoPublic.Visible", false);
             for (int i = 0; i < publicWaystones.size(); i++) {
                 Waystone waystone = publicWaystones.get(i);
-                String selector = "#PublicList[" + i + "]";
+                String selector = "#PublicContent #PublicList[" + i + "]";
                 int globalIndex = i; // Index in combined list
 
-                commandBuilder.append("#PublicList", "Pages/WaystoneEntryButton.ui");
+                commandBuilder.append("#PublicContent #PublicList", "Pages/WaystoneEntryButton.ui");
                 commandBuilder.set(selector + " #Name.Text", waystone.getName());
                 commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
                 String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
@@ -197,15 +215,15 @@ public class WaystoneListPage extends CustomUIPage {
 
         // Populate private waystones
         if (privateWaystones.isEmpty()) {
-            commandBuilder.set("#NoPrivate.Visible", true);
+            commandBuilder.set("#PrivateContent #NoPrivate.Visible", true);
         } else {
-            commandBuilder.set("#NoPrivate.Visible", false);
+            commandBuilder.set("#PrivateContent #NoPrivate.Visible", false);
             for (int i = 0; i < privateWaystones.size(); i++) {
                 Waystone waystone = privateWaystones.get(i);
-                String selector = "#PrivateList[" + i + "]";
+                String selector = "#PrivateContent #PrivateList[" + i + "]";
                 int globalIndex = publicWaystones.size() + i; // Index in combined list
 
-                commandBuilder.append("#PrivateList", "Pages/WaystoneEntryButton.ui");
+                commandBuilder.append("#PrivateContent #PrivateList", "Pages/WaystoneEntryButton.ui");
                 commandBuilder.set(selector + " #Name.Text", waystone.getName());
                 commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
                 String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
@@ -274,6 +292,14 @@ public class WaystoneListPage extends CustomUIPage {
                     System.out.println("[Waystone List] onSettings callback completed");
                 }
                 case "close" -> close();
+                case "tab_public" -> {
+                    currentTab = "public";
+                    rebuild();
+                }
+                case "tab_private" -> {
+                    currentTab = "private";
+                    rebuild();
+                }
             }
         } catch (Exception e) {
             // Log error but don't crash

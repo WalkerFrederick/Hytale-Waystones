@@ -32,7 +32,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         private static BuilderCodec<SettingsEventData> createCodec() {
-            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
+            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
                     .append(new KeyedCodec("Action", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).action = (String)s, e -> ((SettingsEventData)e).action)
                     .add())
@@ -48,6 +48,9 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     .append(new KeyedCodec("@DirectionInput", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).direction = (String)s, e -> ((SettingsEventData)e).direction)
                     .add())
+                    .append(new KeyedCodec("@OrientationInput", (Codec) Codec.STRING),
+                            (e, s) -> ((SettingsEventData)e).orientation = (String)s, e -> ((SettingsEventData)e).orientation)
+                    .add())
                     .build();
         }
 
@@ -60,6 +63,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         private String priority;
         private String visibility;
         private String direction;
+        private String orientation;
 
         public String getAction() {
             return action;
@@ -80,6 +84,10 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         public String getDirection() {
             return direction;
         }
+
+        public String getOrientation() {
+            return orientation;
+        }
     }
 
     private final PlayerRef playerRef;
@@ -92,6 +100,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
     private String pendingName;
     private int pendingPriority;
     private String pendingDirection;
+    private String pendingOrientation;
     // Error message to display
     private String errorMessage = null;
 
@@ -113,6 +122,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.pendingName = waystone != null ? waystone.getName() : "";
         this.pendingPriority = waystone != null ? waystone.getPriority() : 0;
         this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
+        this.pendingOrientation = waystone != null ? waystone.getPlayerOrientation() : "away";
     }
 
     @Override
@@ -122,26 +132,29 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                       @Nonnull Store<EntityStore> store) {
         commandBuilder.append("Pages/WaystoneSettingsPage.ui");
 
+        // Set up all dropdown entries first (before setting values)
+        commandBuilder.set("#Visibility #Input.Entries", new DropdownEntryInfo[] {
+                new DropdownEntryInfo(LocalizableString.fromString("Public"), "public"),
+                new DropdownEntryInfo(LocalizableString.fromString("Private"), "private")
+        });
+        commandBuilder.set("#TeleportDirection #DirectionInput.Entries", new DropdownEntryInfo[] {
+                new DropdownEntryInfo(LocalizableString.fromString("North"), "north"),
+                new DropdownEntryInfo(LocalizableString.fromString("South"), "south"),
+                new DropdownEntryInfo(LocalizableString.fromString("East"), "east"),
+                new DropdownEntryInfo(LocalizableString.fromString("West"), "west")
+        });
+        commandBuilder.set("#PlayerOrientation #OrientationInput.Entries", new DropdownEntryInfo[] {
+                new DropdownEntryInfo(LocalizableString.fromString("Away from Statue"), "away"),
+                new DropdownEntryInfo(LocalizableString.fromString("Towards Statue"), "towards")
+        });
+
         // Set current waystone values in the text fields
         Waystone waystone = WaystoneRegistry.get().get(waystoneId);
         if (waystone != null) {
             commandBuilder.set("#NameInput.Value", waystone.getName());
-
-            // Set up visibility dropdown
-            commandBuilder.set("#Visibility #Input.Entries", new DropdownEntryInfo[] {
-                    new DropdownEntryInfo(LocalizableString.fromString("Public"), "public"),
-                    new DropdownEntryInfo(LocalizableString.fromString("Private"), "private")
-            });
             commandBuilder.set("#Visibility #Input.Value", waystone.isPublic() ? "public" : "private");
-
-            // Set up teleport direction dropdown
-            commandBuilder.set("#TeleportDirection #DirectionInput.Entries", new DropdownEntryInfo[] {
-                    new DropdownEntryInfo(LocalizableString.fromString("North"), "north"),
-                    new DropdownEntryInfo(LocalizableString.fromString("South"), "south"),
-                    new DropdownEntryInfo(LocalizableString.fromString("East"), "east"),
-                    new DropdownEntryInfo(LocalizableString.fromString("West"), "west")
-            });
             commandBuilder.set("#TeleportDirection #DirectionInput.Value", waystone.getTeleportDirection());
+            commandBuilder.set("#PlayerOrientation #OrientationInput.Value", waystone.getPlayerOrientation());
         }
 
         // Show error message if there is one
@@ -171,6 +184,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 CustomUIEventBindingType.ValueChanged,
                 "#TeleportDirection #DirectionInput",
                 EventData.of("@DirectionInput", "#TeleportDirection #DirectionInput.Value"),
+                false
+        );
+
+        // Bind player orientation dropdown value changes
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#PlayerOrientation #OrientationInput",
+                EventData.of("@OrientationInput", "#PlayerOrientation #OrientationInput.Value"),
                 false
         );
 
@@ -242,6 +263,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         if (event.getDirection() != null) {
             pendingDirection = event.getDirection();
             WaystoneRegistry.get().updateTeleportDirection(waystoneId, pendingDirection);
+            sendUpdate(null, false);
+            return;
+        }
+
+        // Handle orientation dropdown value changes
+        if (event.getOrientation() != null) {
+            pendingOrientation = event.getOrientation();
+            WaystoneRegistry.get().updatePlayerOrientation(waystoneId, pendingOrientation);
             sendUpdate(null, false);
             return;
         }
