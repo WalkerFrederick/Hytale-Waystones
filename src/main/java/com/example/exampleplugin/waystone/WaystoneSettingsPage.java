@@ -98,11 +98,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         }
     }
 
+    private static final String BLOCK_PUBLIC_CREATION_PERMISSION = "hytale.command.waystones.blockPublicWaystoneCreation";
+    
     private final PlayerRef playerRef;
     private final String playerUuid;
     private final String waystoneId;
     private final Runnable onBack;
     private final boolean hasEditPermission;
+    private final boolean canMakePublic;
 
     // Track the pending values from text fields
     private String pendingName;
@@ -123,8 +126,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.waystoneId = waystoneId;
         this.onBack = onBack;
 
+        UUID uuid = UUID.fromString(playerUuid);
+        
         // Check if player has edit permission (or is OP)
-        this.hasEditPermission = hasPermission(UUID.fromString(playerUuid), "hytale.command.waystones.edit");
+        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.allowEditAll");
+        
+        // Check if player can make waystones public (not blocked by permission, or is OP)
+        boolean isOp = isOp(uuid);
+        this.canMakePublic = isOp || !hasPermission(uuid, BLOCK_PUBLIC_CREATION_PERMISSION);
 
         // Initialize pending values from current waystone
         Waystone waystone = WaystoneRegistry.get().get(waystoneId);
@@ -133,6 +142,18 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
         this.pendingOrientation = waystone != null ? waystone.getPlayerOrientation() : "away";
         this.pendingServerOwned = waystone != null && waystone.isServerOwned();
+    }
+    
+    /**
+     * Checks if a user is an OP.
+     */
+    private static boolean isOp(UUID uuid) {
+        for (var provider : PermissionsModule.get().getProviders()) {
+            if (provider.getGroupsForUser(uuid).contains("OP")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -191,6 +212,11 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
             commandBuilder.set("#Visibility #Input.Value", waystone.isPublic() ? "public" : "private");
             commandBuilder.set("#TeleportDirection #DirectionInput.Value", waystone.getTeleportDirection());
             commandBuilder.set("#PlayerOrientation #OrientationInput.Value", waystone.getPlayerOrientation());
+        }
+        
+        // Hide visibility section if user cannot make waystones public
+        if (!canMakePublic) {
+            commandBuilder.set("#Visibility.Visible", false);
         }
 
         // Show error message if there is one
@@ -315,6 +341,11 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         // Handle visibility dropdown value changes
         if (event.getVisibility() != null) {
             boolean isPublic = "public".equals(event.getVisibility());
+            // Block changing to public if user doesn't have permission
+            if (isPublic && !canMakePublic) {
+                sendUpdate(null, false);
+                return;
+            }
             Waystone waystone = WaystoneRegistry.get().get(waystoneId);
             if (waystone != null && waystone.isPublic() != isPublic) {
                 WaystoneRegistry.get().toggleVisibility(waystoneId);

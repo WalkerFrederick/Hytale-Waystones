@@ -137,8 +137,8 @@ public class WaystoneListPage extends CustomUIPage {
         this.onSettings = onSettings;
         this.onEditWaystone = onEditWaystone;
         UUID uuid = UUID.fromString(playerUuid);
-        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.edit");
-        this.canSeeAllPrivate = hasPermission(uuid, "hytale.command.waystones.seeAllPrivate");
+        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.allowEditAll");
+        this.canSeeAllPrivate = hasPermission(uuid, "hytale.command.waystones.allowSeeAllPrivate");
     }
     
     /**
@@ -373,7 +373,8 @@ public class WaystoneListPage extends CustomUIPage {
                     int index = event.getIndex();
                     if (index >= 0 && index < currentWaystones.size()) {
                         Waystone waystone = currentWaystones.get(index);
-                        if (waystone != null && waystone.isVisibleTo(playerUuid)) {
+                        // Allow teleport if waystone is visible to player OR they have seeAllPrivate permission
+                        if (waystone != null && (waystone.isVisibleTo(playerUuid) || canSeeAllPrivate)) {
                             // Close BEFORE teleport - important for cross-world teleports
                             // where the player ref becomes invalid after world change
                             close();

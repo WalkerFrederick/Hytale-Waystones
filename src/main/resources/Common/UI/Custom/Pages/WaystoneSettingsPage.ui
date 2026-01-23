@@ -118,7 +118,7 @@ $C.@PageOverlay {
           Visible: false;
 
           Label {
-            Text: "Sort Priority (Op Only)";
+            Text: "Sort Priority (Server Perm Needed)";
             Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
             Anchor: (Top: 16);
           }
@@ -138,13 +138,13 @@ $C.@PageOverlay {
           }
         }
 
-        // Server Owned section (ops only)
+        // Server Owned section (Server Perm Needed)
         Group #ServerOwnedSection {
           LayoutMode: Top;
           Visible: false;
 
           Label {
-            Text: "Owned by Server (Op Only)";
+            Text: "Owned by Server (Server Perm Needed)";
             Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
             Anchor: (Top: 16);
           }

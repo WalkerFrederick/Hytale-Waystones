@@ -1,11 +1,7 @@
 package com.example.exampleplugin.waystone;
 
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.util.BsonUtil;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -19,7 +15,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +33,25 @@ public class WaystoneRegistry {
     private final ReentrantLock saveLock = new ReentrantLock();
     private final AtomicBoolean postSaveRedo = new AtomicBoolean(false);
 
+    // Config settings
+    private boolean debugLogs = false;
+
     private WaystoneRegistry() {
+    }
+
+    /**
+     * Checks if debug logging is enabled.
+     */
+    public static boolean isDebugEnabled() {
+        return instance != null && instance.debugLogs;
+    }
+
+    /**
+     * Sets whether debug logging is enabled.
+     */
+    public void setDebugLogs(boolean enabled) {
+        this.debugLogs = enabled;
+        save();
     }
 
     /**
@@ -69,6 +82,16 @@ public class WaystoneRegistry {
         if (Files.exists(path)) {
             try {
                 BsonDocument document = BsonUtil.readDocument(path).join();
+                
+                // Load config section
+                if (document != null && document.containsKey("Config")) {
+                    BsonDocument config = document.getDocument("Config");
+                    if (config.containsKey("debugLogs")) {
+                        debugLogs = config.getBoolean("debugLogs").getValue();
+                    }
+                }
+                
+                // Load waystones
                 if (document != null && document.containsKey("Waystones")) {
                     BsonArray bsonWarps = document.getArray("Waystones");
                     waystones.clear();
@@ -76,13 +99,17 @@ public class WaystoneRegistry {
                     for (Waystone waystone : loaded) {
                         waystones.put(waystone.getId(), waystone);
                     }
-                    LOGGER.atInfo().log("Loaded %d waystones", waystones.size());
+                    if (debugLogs) {
+                        LOGGER.atInfo().log("Loaded %d waystones", waystones.size());
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.atWarning().log("Failed to load waystones: %s", e.getMessage());
             }
         } else {
-            LOGGER.atInfo().log("No waystones file found, starting fresh");
+            if (debugLogs) {
+                LOGGER.atInfo().log("No waystones file found, starting fresh");
+            }
         }
 
         loaded.set(true);
@@ -110,11 +137,21 @@ public class WaystoneRegistry {
 
     private void saveInternal() {
         Waystone[] array = waystones.values().toArray(new Waystone[0]);
-        BsonDocument document = new BsonDocument("Waystones", Waystone.ARRAY_CODEC.encode(array));
+        
+        // Build config section
+        BsonDocument config = new BsonDocument();
+        config.put("debugLogs", new org.bson.BsonBoolean(debugLogs));
+        
+        // Build main document
+        BsonDocument document = new BsonDocument();
+        document.put("Config", config);
+        document.put("Waystones", Waystone.ARRAY_CODEC.encode(array));
 
         Path path = Universe.get().getPath().resolve(WAYSTONES_FILE);
         BsonUtil.writeDocument(path, document).join();
-        LOGGER.atInfo().log("Saved %d waystones to %s", array.length, WAYSTONES_FILE);
+        if (debugLogs) {
+            LOGGER.atInfo().log("Saved %d waystones to %s", array.length, WAYSTONES_FILE);
+        }
     }
 
     /**
@@ -123,7 +160,9 @@ public class WaystoneRegistry {
     public void register(@Nonnull Waystone waystone) {
         waystones.put(waystone.getId(), waystone);
         save();
-        LOGGER.atInfo().log("Registered waystone: %s", waystone.getName());
+        if (debugLogs) {
+            LOGGER.atInfo().log("Registered waystone: %s", waystone.getName());
+        }
     }
 
     /**
@@ -133,7 +172,9 @@ public class WaystoneRegistry {
         Waystone removed = waystones.remove(waystoneId);
         if (removed != null) {
             save();
-            LOGGER.atInfo().log("Unregistered waystone: %s", removed.getName());
+            if (debugLogs) {
+                LOGGER.atInfo().log("Unregistered waystone: %s", removed.getName());
+            }
             return true;
         }
         return false;
@@ -266,7 +307,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setName(newName);
             save();
-            LOGGER.atInfo().log("Updated waystone name to: %s", newName);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone name to: %s", newName);
+            }
         }
     }
 
@@ -279,7 +322,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setPriority(priority);
             save();
-            LOGGER.atInfo().log("Updated waystone priority to: %d", priority);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone priority to: %d", priority);
+            }
         }
     }
 
@@ -291,7 +336,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setTextColor(textColor);
             save();
-            LOGGER.atInfo().log("Updated waystone text color to: %s", textColor);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone text color to: %s", textColor);
+            }
         }
     }
 
@@ -303,7 +350,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setTeleportDirection(direction);
             save();
-            LOGGER.atInfo().log("Updated waystone teleport direction to: %s", direction);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone teleport direction to: %s", direction);
+            }
         }
     }
 
@@ -315,7 +364,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setPlayerOrientation(orientation);
             save();
-            LOGGER.atInfo().log("Updated waystone player orientation to: %s", orientation);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone player orientation to: %s", orientation);
+            }
         }
     }
 
@@ -327,7 +378,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setServerOwned(serverOwned);
             save();
-            LOGGER.atInfo().log("Updated waystone server owned to: %s", serverOwned);
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone server owned to: %s", serverOwned);
+            }
         }
     }
 
@@ -339,8 +392,10 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.setPublic(!waystone.isPublic());
             save();
-            LOGGER.atInfo().log("Toggled waystone visibility: %s is now %s",
-                    waystone.getName(), waystone.isPublic() ? "public" : "private");
+            if (debugLogs) {
+                LOGGER.atInfo().log("Toggled waystone visibility: %s is now %s",
+                        waystone.getName(), waystone.isPublic() ? "public" : "private");
+            }
         }
     }
 
@@ -352,7 +407,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.addEditor(playerUuid);
             save();
-            LOGGER.atInfo().log("Added editor %s to waystone %s", playerUuid, waystone.getName());
+            if (debugLogs) {
+                LOGGER.atInfo().log("Added editor %s to waystone %s", playerUuid, waystone.getName());
+            }
         }
     }
 
@@ -364,7 +421,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.removeEditor(playerUuid);
             save();
-            LOGGER.atInfo().log("Removed editor %s from waystone %s", playerUuid, waystone.getName());
+            if (debugLogs) {
+                LOGGER.atInfo().log("Removed editor %s from waystone %s", playerUuid, waystone.getName());
+            }
         }
     }
 
@@ -376,7 +435,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.addViewer(playerUuid);
             save();
-            LOGGER.atInfo().log("Added viewer %s to waystone %s", playerUuid, waystone.getName());
+            if (debugLogs) {
+                LOGGER.atInfo().log("Added viewer %s to waystone %s", playerUuid, waystone.getName());
+            }
         }
     }
 
@@ -388,7 +449,9 @@ public class WaystoneRegistry {
         if (waystone != null) {
             waystone.removeViewer(playerUuid);
             save();
-            LOGGER.atInfo().log("Removed viewer %s from waystone %s", playerUuid, waystone.getName());
+            if (debugLogs) {
+                LOGGER.atInfo().log("Removed viewer %s from waystone %s", playerUuid, waystone.getName());
+            }
         }
     }
 
@@ -407,73 +470,4 @@ public class WaystoneRegistry {
         save();
     }
 
-    /**
-     * Cleans up orphaned waystones in a specific world.
-     * A waystone is orphaned if its block no longer exists at its position.
-     * 
-     * @param world The world to check waystones in
-     * @return The number of waystones removed
-     */
-    public int cleanupOrphanedWaystones(@Nonnull World world) {
-        String worldName = world.getName();
-        List<String> toRemove = new ArrayList<>();
-
-        for (Waystone waystone : waystones.values()) {
-            // Only check waystones in this world
-            if (!waystone.getWorldName().equals(worldName)) {
-                continue;
-            }
-
-            // Check if the block at this position is still a waystone block
-            int x = (int) Math.floor(waystone.getX());
-            int y = (int) Math.floor(waystone.getY());
-            int z = (int) Math.floor(waystone.getZ());
-
-            if (!isWaystoneBlockAt(world, x, y, z)) {
-                toRemove.add(waystone.getId());
-                LOGGER.atInfo().log("Found orphaned waystone '%s' at %d, %d, %d - block no longer exists",
-                        waystone.getName(), x, y, z);
-            }
-        }
-
-        // Remove orphaned waystones
-        for (String id : toRemove) {
-            waystones.remove(id);
-        }
-
-        if (!toRemove.isEmpty()) {
-            save();
-            LOGGER.atInfo().log("Cleaned up %d orphaned waystones", toRemove.size());
-        }
-
-        return toRemove.size();
-    }
-
-    /**
-     * Checks if a waystone block exists at the given position.
-     */
-    private boolean isWaystoneBlockAt(@Nonnull World world, int x, int y, int z) {
-        try {
-            long chunkIndex = ChunkUtil.indexChunkFromBlock(x, z);
-            WorldChunk chunk = world.getChunkIfInMemory(chunkIndex);
-            
-            if (chunk == null) {
-                // Chunk not loaded - assume waystone still exists to avoid false positives
-                return true;
-            }
-
-            BlockType blockType = chunk.getBlockType(x, y, z);
-            if (blockType == null) {
-                return false;
-            }
-
-            String blockId = blockType.getId();
-            // Check if it's our waystone block (handles namespacing)
-            return blockId != null && (blockId.equals("Warp_Block") || blockId.endsWith(":Warp_Block"));
-        } catch (Exception e) {
-            // If we can't check, assume it exists to be safe
-            LOGGER.atWarning().log("Failed to check block at %d, %d, %d: %s", x, y, z, e.getMessage());
-            return true;
-        }
-    }
 }

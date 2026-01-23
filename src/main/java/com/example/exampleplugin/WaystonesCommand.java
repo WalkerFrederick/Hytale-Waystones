@@ -57,13 +57,13 @@ public class WaystonesCommand extends CommandBase {
     /**
      * Subcommand: /waystones list
      * Opens the waystone menu for the player.
-     * Requires permission: hytale.command.waystones.list
+     * Requires permission: hytale.command.waystones.allowListMenu
      */
     private static class ListCommand extends AbstractPlayerCommand {
         
         public ListCommand() {
             super("list", "Opens the waystone menu.");
-            requirePermission(HytalePermissions.fromCommand("waystones.list"));
+            requirePermission(HytalePermissions.fromCommand("waystones.allowListMenu"));
         }
 
         @Override
@@ -128,7 +128,7 @@ public class WaystonesCommand extends CommandBase {
     /**
      * Subcommand: /waystones edit <name> <property> <value>
      * Edits a waystone property by name.
-     * Requires permission: hytale.command.waystones.edit
+     * Requires permission: hytale.command.waystones.allowEditAll
      */
     private static class EditCommand extends CommandBase {
 
@@ -143,7 +143,7 @@ public class WaystonesCommand extends CommandBase {
 
         public EditCommand() {
             super("edit", "Edits a waystone property.");
-            requirePermission(HytalePermissions.fromCommand("waystones.edit"));
+            requirePermission(HytalePermissions.fromCommand("waystones.allowEditAll"));
         }
 
         @Override

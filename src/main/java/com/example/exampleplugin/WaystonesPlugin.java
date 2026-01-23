@@ -25,7 +25,6 @@ public class WaystonesPlugin extends JavaPlugin {
     public WaystonesPlugin(JavaPluginInit init) {
         super(init);
         instance = this;
-        LOGGER.atInfo().log("Initializing %s version %s", this.getName(), this.getManifest().getVersion().toString());
     }
 
     /**
@@ -46,7 +45,6 @@ public class WaystonesPlugin extends JavaPlugin {
                 WaystoneComponent::new
         );
         WaystoneComponent.setComponentType(waystoneComponentType);
-        LOGGER.atInfo().log("Registered WaystoneComponent type");
 
         // Register the Waystone page supplier for block interactions
         OpenCustomUIInteraction.registerCustomPageSupplier(
@@ -55,16 +53,23 @@ public class WaystonesPlugin extends JavaPlugin {
                 "Waystone",
                 new WaystonePlacementHandler()
         );
-        LOGGER.atInfo().log("Registered Waystone page supplier");
+
+        // Register ECS systems for waystone block events
+        getEntityStoreRegistry().registerSystem(new com.example.exampleplugin.waystone.WaystoneBreakHandler());
+        getEntityStoreRegistry().registerSystem(new com.example.exampleplugin.waystone.WaystonePlaceHandler());
 
         // Register event to load waystones when worlds are ready
         EventRegistry eventRegistry = getEventRegistry();
         eventRegistry.registerGlobal(AllWorldsLoadedEvent.class, event -> {
             WaystoneRegistry.get().load();
-            LOGGER.atInfo().log("Waystone system initialized with %d waystones", WaystoneRegistry.get().count());
+            if (WaystoneRegistry.isDebugEnabled()) {
+                LOGGER.atInfo().log("Waystone system initialized with %d waystones", WaystoneRegistry.get().count());
+            }
         });
 
-        LOGGER.atInfo().log("Waystone plugin setup complete");
+        if (WaystoneRegistry.isDebugEnabled()) {
+            LOGGER.atInfo().log("Waystone plugin setup complete");
+        }
     }
 
     @Override
@@ -72,7 +77,9 @@ public class WaystonesPlugin extends JavaPlugin {
         // Save waystones on shutdown
         if (WaystoneRegistry.get().isLoaded()) {
             WaystoneRegistry.get().save();
-            LOGGER.atInfo().log("Saved waystones on shutdown");
+            if (WaystoneRegistry.isDebugEnabled()) {
+                LOGGER.atInfo().log("Saved waystones on shutdown");
+            }
         }
     }
 

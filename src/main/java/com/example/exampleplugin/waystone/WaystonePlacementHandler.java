@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.ser
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -46,9 +47,6 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         String playerName = playerRef.getUsername();
         Store<EntityStore> store = ref.getStore();
         World world = ((EntityStore) store.getExternalData()).getWorld();
-
-        // Clean up any orphaned waystones in this world before proceeding
-        WaystoneRegistry.get().cleanupOrphanedWaystones(world);
 
         // Check if a waystone already exists at this position
         Waystone existingWaystone = WaystoneRegistry.get().getByPosition(
@@ -124,6 +122,8 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         );
     }
 
+    private static final String BLOCK_PUBLIC_CREATION_PERMISSION = "hytale.command.waystones.blockPublicWaystoneCreation";
+    
     private CustomUIPage createNewWaystoneAndNamingPage(@Nonnull PlayerRef playerRef,
                                                          @Nonnull String playerUuid,
                                                          @Nonnull String playerName,
@@ -139,6 +139,11 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         final double x = position.x;
         final double y = position.y;
         final double z = position.z;
+        
+        // Check if user has blockPublicWaystoneCreation permission - if so, default to private
+        // OPs always default to public
+        UUID playerUuidObj = UUID.fromString(playerUuid);
+        final boolean defaultToPublic = isOp(playerUuidObj) || !hasPermission(playerUuidObj, BLOCK_PUBLIC_CREATION_PERMISSION);
 
         // Open naming page - waystone will be created and registered only on submit
         return new WaystoneNamingPage(
@@ -155,10 +160,10 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                             yaw,
                             UUID.fromString(finalPlayerUuid),
                             finalPlayerName,
-                            true // Default to public
+                            defaultToPublic
                     );
                     WaystoneRegistry.get().register(newWaystone);
-                    System.out.println("[Waystone] Created new waystone: '" + newName + "' at (" + x + ", " + y + ", " + z + ") in world '" + worldName + "'");
+                    System.out.println("[Waystone] Created new waystone: '" + newName + "' at (" + x + ", " + y + ", " + z + ") in world '" + worldName + "' (public: " + defaultToPublic + ")");
                 },
                 () -> {
                     // On cancel - don't register the waystone
@@ -166,6 +171,38 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                     System.out.println("[Waystone] Waystone creation cancelled");
                 }
         );
+    }
+    
+    /**
+     * Checks if a user has a specific permission (either directly or via their groups).
+     */
+    private static boolean hasPermission(UUID uuid, String permission) {
+        for (var provider : PermissionsModule.get().getProviders()) {
+            // Check direct user permissions
+            if (provider.getUserPermissions(uuid).contains(permission)) {
+                return true;
+            }
+            
+            // Check group permissions
+            for (String group : provider.getGroupsForUser(uuid)) {
+                if (provider.getGroupPermissions(group).contains(permission)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Checks if a user is an OP.
+     */
+    private static boolean isOp(UUID uuid) {
+        for (var provider : PermissionsModule.get().getProviders()) {
+            if (provider.getGroupsForUser(uuid).contains("OP")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void openRenamePage(@Nonnull PlayerRef playerRef,
