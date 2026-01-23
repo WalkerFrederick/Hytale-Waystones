@@ -38,7 +38,7 @@
     },
     "Gathering": {
       "Breaking": {
-        "GatherType": "Rocks"
+        "GatherType": "Benches"
       }
     },
     "HitboxType": "Waystone",
