@@ -37,6 +37,14 @@ $C.@PageOverlay {
         }
       }
 
+      // Warning for private waystones the player doesn't own
+      Label #PrivateWarning {
+        Text: "This Waystone is private. You cannot warp back to it.";
+        Style: (FontSize: 13, TextColor: #e8a855, HorizontalAlignment: Center);
+        Anchor: (Top: 8);
+        Visible: false;
+      }
+
       // Public Waystones Content
       Group #PublicContent {
         Visible: true;

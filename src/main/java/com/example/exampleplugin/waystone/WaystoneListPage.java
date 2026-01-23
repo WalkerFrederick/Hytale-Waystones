@@ -102,8 +102,9 @@ public class WaystoneListPage extends CustomUIPage {
     private final Consumer<Waystone> onTeleport;
     private final Runnable onRename;
     private final Runnable onSettings;
-    private final Consumer<String> onEditWaystone; // Callback for ops to edit any waystone by ID
-    private final boolean isOp;
+    private final Consumer<String> onEditWaystone; // Callback for users with edit permission to edit any waystone by ID
+    private final boolean hasEditPermission;
+    private final boolean canSeeAllPrivate;
     private String searchQuery = "";
     // Cache the current list of waystones for index-based lookup
     private List<Waystone> currentWaystones = List.of();
@@ -135,7 +136,35 @@ public class WaystoneListPage extends CustomUIPage {
         this.onRename = onRename;
         this.onSettings = onSettings;
         this.onEditWaystone = onEditWaystone;
-        this.isOp = PermissionsModule.get().getGroupsForUser(UUID.fromString(playerUuid)).contains("OP");
+        UUID uuid = UUID.fromString(playerUuid);
+        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.edit");
+        this.canSeeAllPrivate = hasPermission(uuid, "hytale.command.waystones.seeAllPrivate");
+    }
+    
+    /**
+     * Checks if a user has a specific permission (either directly, via their groups, or by being OP).
+     */
+    private static boolean hasPermission(UUID uuid, String permission) {
+        for (var provider : PermissionsModule.get().getProviders()) {
+            // OPs have all permissions
+            if (provider.getGroupsForUser(uuid).contains("OP")) {
+                return true;
+            }
+            
+            // Check direct user permissions
+            if (provider.getUserPermissions(uuid).contains(permission)) {
+                return true;
+            }
+            
+            // Check group permissions
+            for (String group : provider.getGroupsForUser(uuid)) {
+                if (provider.getGroupPermissions(group).contains(permission)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 
     @Override
@@ -151,14 +180,25 @@ public class WaystoneListPage extends CustomUIPage {
             Waystone currentWaystone = WaystoneRegistry.get().get(currentWaystoneId);
             if (currentWaystone != null) {
                 commandBuilder.set("#TitleText.Text", currentWaystone.getName());
+                
+                // Show warning if the waystone is private and the player doesn't own it
+                boolean isPrivateNotOwned = !currentWaystone.isPublic() && !currentWaystone.isOwnedBy(playerUuid);
+                commandBuilder.set("#PrivateWarning.Visible", isPrivateNotOwned);
+                
+                // Only show edit button if user owns the waystone or has edit permission
+                boolean canEdit = currentWaystone.isOwnedBy(playerUuid) || hasEditPermission;
+                commandBuilder.set("#EditButtonGroup.Visible", canEdit);
+                
+                if (canEdit) {
+                    eventBuilder.addEventBinding(
+                            CustomUIEventBindingType.Activating,
+                            "#SettingsButton",
+                            EventData.of("Action", "settings")
+                    );
+                }
+            } else {
+                commandBuilder.set("#EditButtonGroup.Visible", false);
             }
-            // Show edit button and bind it
-            commandBuilder.set("#EditButtonGroup.Visible", true);
-            eventBuilder.addEventBinding(
-                    CustomUIEventBindingType.Activating,
-                    "#SettingsButton",
-                    EventData.of("Action", "settings")
-            );
         } else {
             // Hide edit button group when opened via command (no current waystone)
             commandBuilder.set("#EditButtonGroup.Visible", false);
@@ -187,8 +227,17 @@ public class WaystoneListPage extends CustomUIPage {
         commandBuilder.set("#PublicContent.Visible", "public".equals(currentTab));
         commandBuilder.set("#PrivateContent.Visible", "private".equals(currentTab));
 
-        // Get waystones visible to this player and split into public/private
-        List<Waystone> allWaystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
+        // Get waystones visible to this player (or all if they have seeAllPrivate permission)
+        List<Waystone> allWaystones;
+        if (canSeeAllPrivate) {
+            // Can see all waystones including private ones they don't own
+            allWaystones = WaystoneRegistry.get().getAll().stream()
+                    .sorted(java.util.Comparator.comparingInt(Waystone::getPriority).reversed()
+                            .thenComparing(Waystone::getName, String.CASE_INSENSITIVE_ORDER))
+                    .toList();
+        } else {
+            allWaystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
+        }
 
         // Filter by search query if present
         if (searchQuery != null && !searchQuery.isEmpty()) {
@@ -235,7 +284,7 @@ public class WaystoneListPage extends CustomUIPage {
                 commandBuilder.set(selector + " #World.Text", worldDisplay);
 
                 // Show gear button for ops
-                if (isOp && onEditWaystone != null) {
+                if (hasEditPermission && onEditWaystone != null) {
                     commandBuilder.set(selector + " #GearButton.Visible", true);
                     eventBuilder.addEventBinding(
                             CustomUIEventBindingType.Activating,
@@ -270,7 +319,7 @@ public class WaystoneListPage extends CustomUIPage {
                 commandBuilder.set(selector + " #World.Text", worldDisplay);
 
                 // Show gear button for ops
-                if (isOp && onEditWaystone != null) {
+                if (hasEditPermission && onEditWaystone != null) {
                     commandBuilder.set(selector + " #GearButton.Visible", true);
                     eventBuilder.addEventBinding(
                             CustomUIEventBindingType.Activating,
@@ -305,7 +354,7 @@ public class WaystoneListPage extends CustomUIPage {
 
             // Handle gear button click (edit waystone) for ops
             int editIndex = event.getEditIndex();
-            if (editIndex >= 0 && editIndex < currentWaystones.size() && isOp && onEditWaystone != null) {
+            if (editIndex >= 0 && editIndex < currentWaystones.size() && hasEditPermission && onEditWaystone != null) {
                 Waystone waystone = currentWaystones.get(editIndex);
                 if (waystone != null) {
                     // Don't close - let the new page replace this one (same as settings flow)

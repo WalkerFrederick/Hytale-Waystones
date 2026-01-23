@@ -182,6 +182,14 @@ public class Waystone {
         return ownerName;
     }
 
+    public void setOwnerUuid(@Nonnull String ownerUuid) {
+        this.ownerUuid = ownerUuid;
+    }
+
+    public void setOwnerName(@Nonnull String ownerName) {
+        this.ownerName = ownerName;
+    }
+
     public boolean isPublic() {
         return isPublic;
     }
