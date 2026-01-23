@@ -17,130 +17,180 @@ $C.@PageOverlay {
       Padding: (Vertical: 32, Horizontal: 45);
       LayoutMode: Top;
 
-      // Name section
-      Label {
-        Text: "Waystone Name";
-        Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
-      }
+      Group #ScrollContent {
+        LayoutMode: TopScrolling;
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+        Anchor: (Top: 0, Height: 500);
 
-      Label {
-          Text: "Name of the Waystone";
-          Style: (FontSize: 12, TextColor: #6a7a8a);
-          Anchor: (Top: 4);
-      }
-
-      TextField #NameInput {
-        Style: $C.@DefaultInputFieldStyle;
-        Background: $C.@InputBoxBackground;
-        Anchor: (Top: 8, Height: 44);
-        MaxLength: 100;
-        Padding: (Horizontal: 10);
-        PlaceholderText: "Enter name...";
-      }
-
-      Label #Error {
-        Style: (RenderBold: true, TextColor: #bb3333);
-        Anchor: (Top: 4);
-        Visible: false;
-      }
-
-      // Visibility dropdown section
-      Group #Visibility {
-        LayoutMode: Top;
-        Anchor: (Top: 16);
-
+        // Name section
         Label {
-          Text: "Visibility";
+          Text: "Waystone Name";
           Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
         }
 
         Label {
-          Text: "Who can see this waystone in their list";
-          Style: (FontSize: 12, TextColor: #6a7a8a);
-          Anchor: (Top: 4);
+            Text: "Name of the Waystone";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
         }
 
-        $C.@DropdownBox #Input {
-          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
-        }
-      }
-
-      // Side to Teleport To dropdown section
-      Group #TeleportDirection {
-        LayoutMode: Top;
-        Anchor: (Top: 16);
-
-        Label {
-          Text: "Side to Teleport To";
-          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
-        }
-
-        Label {
-          Text: "Which side of the statue players appear on";
-          Style: (FontSize: 12, TextColor: #6a7a8a);
-          Anchor: (Top: 4);
-        }
-
-        $C.@DropdownBox #DirectionInput {
-          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
-        }
-      }
-
-      // Player Orientation dropdown section
-      Group #PlayerOrientation {
-        LayoutMode: Top;
-        Anchor: (Top: 16);
-
-        Label {
-          Text: "Player Orientation";
-          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
-        }
-
-        Label {
-          Text: "Direction players face when teleporting";
-          Style: (FontSize: 12, TextColor: #6a7a8a);
-          Anchor: (Top: 4);
-        }
-
-        $C.@DropdownBox #OrientationInput {
-          @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
-        }
-      }
-      
-      // Priority section (ops only)
-      Group #PrioritySection {
-        LayoutMode: Top;
-        Visible: false;
-
-        Label {
-          Text: "Sort Priority (Op Only)";
-          Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
-          Anchor: (Top: 16);
-        }
-
-        Label {
-          Text: "Higher numbers appear first in the list";
-          Style: (FontSize: 12, TextColor: #6a7a8a);
-          Anchor: (Top: 4);
-        }
-
-        TextField #PriorityInput {
+        TextField #NameInput {
           Style: $C.@DefaultInputFieldStyle;
           Background: $C.@InputBoxBackground;
           Anchor: (Top: 8, Height: 44);
+          MaxLength: 100;
           Padding: (Horizontal: 10);
-          PlaceholderText: "0";
+          PlaceholderText: "Enter name...";
+        }
+
+        Label #Error {
+          Style: (RenderBold: true, TextColor: #bb3333);
+          Anchor: (Top: 4);
+          Visible: false;
+        }
+
+        // Visibility dropdown section
+        Group #Visibility {
+          LayoutMode: Top;
+          Anchor: (Top: 16);
+
+          Label {
+            Text: "Visibility";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+          }
+
+          Label {
+            Text: "Who can see this waystone in their list";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #Input {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
+
+        // Side to Teleport To dropdown section
+        Group #TeleportDirection {
+          LayoutMode: Top;
+          Anchor: (Top: 16);
+
+          Label {
+            Text: "Side to Teleport To";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+          }
+
+          Label {
+            Text: "Which side of the statue players appear on";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #DirectionInput {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
+
+        // Player Orientation dropdown section
+        Group #PlayerOrientation {
+          LayoutMode: Top;
+          Anchor: (Top: 16);
+
+          Label {
+            Text: "Player Orientation";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+          }
+
+          Label {
+            Text: "Direction players face when teleporting";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #OrientationInput {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
+        
+        // Priority section (ops only)
+        Group #PrioritySection {
+          LayoutMode: Top;
+          Visible: false;
+
+          Label {
+            Text: "Sort Priority (Op Only)";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+            Anchor: (Top: 16);
+          }
+
+          Label {
+            Text: "Higher numbers appear first in the list";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          TextField #PriorityInput {
+            Style: $C.@DefaultInputFieldStyle;
+            Background: $C.@InputBoxBackground;
+            Anchor: (Top: 8, Height: 44);
+            Padding: (Horizontal: 10);
+            PlaceholderText: "0";
+          }
+        }
+
+        // Server Owned section (ops only)
+        Group #ServerOwnedSection {
+          LayoutMode: Top;
+          Visible: false;
+
+          Label {
+            Text: "Owned by Server (Op Only)";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+            Anchor: (Top: 16);
+          }
+
+          Label {
+            Text: "Hide owner name in waystone list";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #ServerOwnedInput {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
+
+        // Reset section (ops only)
+        Group #ResetSection {
+          LayoutMode: Top;
+          Visible: false;
+
+          Label {
+            Text: "Reset Waystone (Op Only)";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #bb6644);
+            Anchor: (Top: 24);
+          }
+
+          Label {
+            Text: "Unregister this waystone so it acts like new on next use";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@SecondaryTextButton #ResetButton {
+            Text: "Reset";
+            Anchor: (Top: 8, Left: 0, Height: 36, Width: 200);
+          }
         }
       }
 
-      // Spacer to push buttons to bottom
       Group {
-        FlexWeight: 1;
+        Anchor: (Height: 12);
       }
 
       // Bottom button
       Group {
-        Anchor: (Height: 44);
+        Anchor: (Top: 20, Height: 44);
 
         $C.@TextButton #SaveButton {
           @Anchor = (Full: 0);

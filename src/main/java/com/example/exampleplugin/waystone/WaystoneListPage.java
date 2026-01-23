@@ -15,10 +15,13 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -35,7 +38,7 @@ public class WaystoneListPage extends CustomUIPage {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         private static BuilderCodec<WaystoneEventData> createCodec() {
-            return (BuilderCodec<WaystoneEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(WaystoneEventData.class, WaystoneEventData::new)
+            return (BuilderCodec<WaystoneEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(WaystoneEventData.class, WaystoneEventData::new)
                     .append(new KeyedCodec("Index", (Codec) Codec.STRING),
                             (e, s) -> {
                                 ((WaystoneEventData)e).indexStr = (String)s;
@@ -45,6 +48,16 @@ public class WaystoneListPage extends CustomUIPage {
                                     ((WaystoneEventData)e).index = -1;
                                 }
                             }, e -> ((WaystoneEventData)e).indexStr)
+                    .add())
+                    .append(new KeyedCodec("EditIndex", (Codec) Codec.STRING),
+                            (e, s) -> {
+                                ((WaystoneEventData)e).editIndexStr = (String)s;
+                                try {
+                                    ((WaystoneEventData)e).editIndex = Integer.parseInt((String)s);
+                                } catch (NumberFormatException ex) {
+                                    ((WaystoneEventData)e).editIndex = -1;
+                                }
+                            }, e -> ((WaystoneEventData)e).editIndexStr)
                     .add())
                     .append(new KeyedCodec("Action", (Codec) Codec.STRING),
                             (e, s) -> ((WaystoneEventData)e).action = (String)s, e -> ((WaystoneEventData)e).action)
@@ -61,11 +74,17 @@ public class WaystoneListPage extends CustomUIPage {
 
         private String indexStr;
         private int index = -1;
+        private String editIndexStr;
+        private int editIndex = -1;
         private String action;
         private String searchQuery;
 
         public int getIndex() {
             return index;
+        }
+
+        public int getEditIndex() {
+            return editIndex;
         }
 
         public String getAction() {
@@ -83,6 +102,8 @@ public class WaystoneListPage extends CustomUIPage {
     private final Consumer<Waystone> onTeleport;
     private final Runnable onRename;
     private final Runnable onSettings;
+    private final Consumer<String> onEditWaystone; // Callback for ops to edit any waystone by ID
+    private final boolean isOp;
     private String searchQuery = "";
     // Cache the current list of waystones for index-based lookup
     private List<Waystone> currentWaystones = List.of();
@@ -98,19 +119,23 @@ public class WaystoneListPage extends CustomUIPage {
      * @param onTeleport Callback when player selects a waystone to teleport to
      * @param onRename Callback when player wants to rename the current waystone
      * @param onSettings Callback when player wants to open settings
+     * @param onEditWaystone Callback for ops to edit any waystone by ID (can be null)
      */
     public WaystoneListPage(@Nonnull PlayerRef playerRef,
                             @Nonnull String playerUuid,
                             @Nullable String currentWaystoneId,
                             @Nonnull Consumer<Waystone> onTeleport,
                             @Nonnull Runnable onRename,
-                            @Nonnull Runnable onSettings) {
+                            @Nonnull Runnable onSettings,
+                            @Nullable Consumer<String> onEditWaystone) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction);
         this.playerUuid = playerUuid;
         this.currentWaystoneId = currentWaystoneId;
         this.onTeleport = onTeleport;
         this.onRename = onRename;
         this.onSettings = onSettings;
+        this.onEditWaystone = onEditWaystone;
+        this.isOp = PermissionsModule.get().getGroupsForUser(UUID.fromString(playerUuid)).contains("OP");
     }
 
     @Override
@@ -121,20 +146,23 @@ public class WaystoneListPage extends CustomUIPage {
         // Load the UI template
         commandBuilder.append("Pages/WaystoneListPage.ui");
 
-        // Set the title to the current waystone's name
+        // Set the title to the current waystone's name and show/hide edit button
         if (currentWaystoneId != null) {
             Waystone currentWaystone = WaystoneRegistry.get().get(currentWaystoneId);
             if (currentWaystone != null) {
                 commandBuilder.set("#TitleText.Text", currentWaystone.getName());
             }
+            // Show edit button and bind it
+            commandBuilder.set("#EditButtonGroup.Visible", true);
+            eventBuilder.addEventBinding(
+                    CustomUIEventBindingType.Activating,
+                    "#SettingsButton",
+                    EventData.of("Action", "settings")
+            );
+        } else {
+            // Hide edit button group when opened via command (no current waystone)
+            commandBuilder.set("#EditButtonGroup.Visible", false);
         }
-
-        // Bind settings button
-        eventBuilder.addEventBinding(
-                CustomUIEventBindingType.Activating,
-                "#SettingsButton",
-                EventData.of("Action", "settings")
-        );
 
         // Bind exit button
         eventBuilder.addEventBinding(
@@ -201,13 +229,24 @@ public class WaystoneListPage extends CustomUIPage {
 
                 commandBuilder.append("#PublicContent #PublicList", "Pages/WaystoneEntryButton.ui");
                 commandBuilder.set(selector + " #Name.Text", waystone.getName());
-                commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
+                // Hide owner name if server owned
+                commandBuilder.set(selector + " #Owner.Text", waystone.isServerOwned() ? "" : waystone.getOwnerName());
                 String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
                 commandBuilder.set(selector + " #World.Text", worldDisplay);
 
+                // Show gear button for ops
+                if (isOp && onEditWaystone != null) {
+                    commandBuilder.set(selector + " #GearButton.Visible", true);
+                    eventBuilder.addEventBinding(
+                            CustomUIEventBindingType.Activating,
+                            selector + " #GearButton",
+                            EventData.of("EditIndex", String.valueOf(globalIndex))
+                    );
+                }
+
                 eventBuilder.addEventBinding(
                         CustomUIEventBindingType.Activating,
-                        selector,
+                        selector + " #Button",
                         EventData.of("Index", String.valueOf(globalIndex))
                 );
             }
@@ -225,13 +264,24 @@ public class WaystoneListPage extends CustomUIPage {
 
                 commandBuilder.append("#PrivateContent #PrivateList", "Pages/WaystoneEntryButton.ui");
                 commandBuilder.set(selector + " #Name.Text", waystone.getName());
-                commandBuilder.set(selector + " #Owner.Text", waystone.getOwnerName());
+                // Hide owner name if server owned
+                commandBuilder.set(selector + " #Owner.Text", waystone.isServerOwned() ? "" : waystone.getOwnerName());
                 String worldDisplay = waystone.getWorldName().equals("default") ? "" : waystone.getWorldName();
                 commandBuilder.set(selector + " #World.Text", worldDisplay);
 
+                // Show gear button for ops
+                if (isOp && onEditWaystone != null) {
+                    commandBuilder.set(selector + " #GearButton.Visible", true);
+                    eventBuilder.addEventBinding(
+                            CustomUIEventBindingType.Activating,
+                            selector + " #GearButton",
+                            EventData.of("EditIndex", String.valueOf(globalIndex))
+                    );
+                }
+
                 eventBuilder.addEventBinding(
                         CustomUIEventBindingType.Activating,
-                        selector,
+                        selector + " #Button",
                         EventData.of("Index", String.valueOf(globalIndex))
                 );
             }
@@ -251,6 +301,17 @@ public class WaystoneListPage extends CustomUIPage {
                 this.searchQuery = event.getSearchQuery();
                 rebuild();
                 return;
+            }
+
+            // Handle gear button click (edit waystone) for ops
+            int editIndex = event.getEditIndex();
+            if (editIndex >= 0 && editIndex < currentWaystones.size() && isOp && onEditWaystone != null) {
+                Waystone waystone = currentWaystones.get(editIndex);
+                if (waystone != null) {
+                    // Don't close - let the new page replace this one (same as settings flow)
+                    onEditWaystone.accept(waystone.getId());
+                    return;
+                }
             }
 
             String action = event.getAction();

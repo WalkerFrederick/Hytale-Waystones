@@ -116,6 +116,10 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                 () -> {
                     // Settings callback
                     openSettingsPage(playerRef, playerUuid, currentWaystoneId, store, ref);
+                },
+                // On edit waystone callback (for ops gear icon)
+                waystoneId -> {
+                    openSettingsPage(playerRef, playerUuid, waystoneId, store, ref);
                 }
         );
     }

@@ -29,7 +29,7 @@ public class Waystone {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Codec<Waystone> createCodec() {
-        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
+        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
                 .addField(new KeyedCodec("Id", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).id = (String)s, w -> ((Waystone)w).id))
                 .addField(new KeyedCodec("Name", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).name = (String)s, w -> ((Waystone)w).name))
                 .addField(new KeyedCodec("World", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).worldName = (String)s, w -> ((Waystone)w).worldName))
@@ -53,6 +53,8 @@ public class Waystone {
                 .append(new KeyedCodec("TeleportDirection", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).teleportDirection = v != null ? (String)v : "north", w -> ((Waystone)w).teleportDirection)
                 .add())
                 .append(new KeyedCodec("PlayerOrientation", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).playerOrientation = v != null ? (String)v : "away", w -> ((Waystone)w).playerOrientation)
+                .add())
+                .append(new KeyedCodec("ServerOwned", (Codec) Codec.BOOLEAN, false, true), (w, v) -> ((Waystone)w).serverOwned = v != null && (Boolean)v, w -> ((Waystone)w).serverOwned)
                 .add()
                 .build();
     }
@@ -79,6 +81,7 @@ public class Waystone {
     private String textColor = "#ffffff";
     private String teleportDirection = "north"; // north, south, east, west
     private String playerOrientation = "away"; // away, towards
+    private boolean serverOwned = false; // If true, waystone is owned by server (no owner name displayed)
 
     /**
      * Default constructor for codec deserialization.
@@ -225,6 +228,14 @@ public class Waystone {
 
     public void setPlayerOrientation(@Nonnull String playerOrientation) {
         this.playerOrientation = playerOrientation;
+    }
+
+    public boolean isServerOwned() {
+        return serverOwned;
+    }
+
+    public void setServerOwned(boolean serverOwned) {
+        this.serverOwned = serverOwned;
     }
 
     /**

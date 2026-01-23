@@ -17,31 +17,6 @@ $C.@PageOverlay {
       LayoutMode: Top;
       Padding: (Horizontal: 20);
 
-      // Edit button at top
-      Group {
-        Anchor: (Top: 16, Height: 44);
-
-        Button #SettingsButton {
-          Anchor: (Full: 0);
-          Style: $C.@DefaultButtonStyle;
-
-          Group {
-            Anchor: (Full: 0);
-            LayoutMode: Center;
-
-            Group {
-              Anchor: (Width: 14, Height: 14, Right: 6);
-              Background: "Icons/PencilIcon.png";
-            }
-
-            Label {
-              Style: $C.@DefaultButtonLabelStyle;
-              Text: "Edit";
-            }
-          }
-        }
-      }
-
       // Tab buttons
       Group {
         LayoutMode: Left;
@@ -65,7 +40,6 @@ $C.@PageOverlay {
       // Public Waystones Content
       Group #PublicContent {
         Visible: true;
-        FlexWeight: 1;
         LayoutMode: Top;
         Anchor: (Top: 16);
 
@@ -84,14 +58,13 @@ $C.@PageOverlay {
         Group #PublicList {
           LayoutMode: TopScrolling;
           ScrollbarStyle: $C.@DefaultScrollbarStyle;
-          Anchor: (Top: 8, Height: 430);
+          Anchor: (Left: 0, Right: 0, Top: 8, Height: 450);
         }
       }
 
       // Private Waystones Content
       Group #PrivateContent {
         Visible: false;
-        FlexWeight: 1;
         LayoutMode: Top;
         Anchor: (Top: 16);
 
@@ -110,7 +83,32 @@ $C.@PageOverlay {
         Group #PrivateList {
           LayoutMode: TopScrolling;
           ScrollbarStyle: $C.@DefaultScrollbarStyle;
-          Anchor: (Top: 8, Height: 430);
+          Anchor: (Left: 0, Right: 0, Top: 8, Height: 450);
+        }
+      }
+
+      // Edit button at bottom
+      Group #EditButtonGroup {
+        Anchor: (Top: 16, Height: 44);
+
+        Button #SettingsButton {
+          Anchor: (Full: 0);
+          Style: $C.@DefaultButtonStyle;
+
+          Group {
+            Anchor: (Full: 0);
+            LayoutMode: Center;
+
+            Group {
+              Anchor: (Width: 14, Height: 14, Right: 6);
+              Background: "Icons/PencilIcon.png";
+            }
+
+            Label {
+              Style: $C.@DefaultButtonLabelStyle;
+              Text: "Edit";
+            }
+          }
         }
       }
 

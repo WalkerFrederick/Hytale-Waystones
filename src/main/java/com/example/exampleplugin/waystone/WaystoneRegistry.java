@@ -320,6 +320,18 @@ public class WaystoneRegistry {
     }
 
     /**
+     * Updates a waystone's server owned status.
+     */
+    public void updateServerOwned(@Nonnull String waystoneId, boolean serverOwned) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setServerOwned(serverOwned);
+            save();
+            LOGGER.atInfo().log("Updated waystone server owned to: %s", serverOwned);
+        }
+    }
+
+    /**
      * Toggles a waystone's visibility.
      */
     public void toggleVisibility(@Nonnull String waystoneId) {

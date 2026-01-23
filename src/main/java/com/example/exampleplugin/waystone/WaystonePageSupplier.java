@@ -80,6 +80,10 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
                     if (currentWaystoneId != null) {
                         openSettingsPage(playerRef, playerUuid, currentWaystoneId, store, ref);
                     }
+                },
+                // On edit waystone callback (for ops gear icon)
+                waystoneId -> {
+                    openSettingsPage(playerRef, playerUuid, waystoneId, store, ref);
                 }
         );
     }

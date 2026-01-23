@@ -32,7 +32,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         private static BuilderCodec<SettingsEventData> createCodec() {
-            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
+            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
                     .append(new KeyedCodec("Action", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).action = (String)s, e -> ((SettingsEventData)e).action)
                     .add())
@@ -51,6 +51,9 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     .append(new KeyedCodec("@OrientationInput", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).orientation = (String)s, e -> ((SettingsEventData)e).orientation)
                     .add())
+                    .append(new KeyedCodec("@ServerOwnedInput", (Codec) Codec.STRING),
+                            (e, s) -> ((SettingsEventData)e).serverOwned = (String)s, e -> ((SettingsEventData)e).serverOwned)
+                    .add())
                     .build();
         }
 
@@ -64,6 +67,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         private String visibility;
         private String direction;
         private String orientation;
+        private String serverOwned;
 
         public String getAction() {
             return action;
@@ -88,6 +92,10 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         public String getOrientation() {
             return orientation;
         }
+
+        public String getServerOwned() {
+            return serverOwned;
+        }
     }
 
     private final PlayerRef playerRef;
@@ -101,6 +109,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
     private int pendingPriority;
     private String pendingDirection;
     private String pendingOrientation;
+    private boolean pendingServerOwned;
     // Error message to display
     private String errorMessage = null;
 
@@ -123,6 +132,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.pendingPriority = waystone != null ? waystone.getPriority() : 0;
         this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
         this.pendingOrientation = waystone != null ? waystone.getPlayerOrientation() : "away";
+        this.pendingServerOwned = waystone != null && waystone.isServerOwned();
     }
 
     @Override
@@ -209,6 +219,34 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     EventData.of("@PriorityInput", "#PriorityInput.Value"),
                     false
             );
+
+            // Server Owned section - also only visible to ops
+            commandBuilder.set("#ServerOwnedSection.Visible", true);
+            commandBuilder.set("#ServerOwnedSection #ServerOwnedInput.Entries", new DropdownEntryInfo[] {
+                    new DropdownEntryInfo(LocalizableString.fromString("No"), "no"),
+                    new DropdownEntryInfo(LocalizableString.fromString("Yes"), "yes")
+            });
+            if (waystone != null) {
+                commandBuilder.set("#ServerOwnedSection #ServerOwnedInput.Value", waystone.isServerOwned() ? "yes" : "no");
+            }
+
+            // Bind server owned dropdown value changes
+            eventBuilder.addEventBinding(
+                    CustomUIEventBindingType.ValueChanged,
+                    "#ServerOwnedSection #ServerOwnedInput",
+                    EventData.of("@ServerOwnedInput", "#ServerOwnedSection #ServerOwnedInput.Value"),
+                    false
+            );
+
+            // Reset section - also only visible to ops
+            commandBuilder.set("#ResetSection.Visible", true);
+
+            // Bind reset button
+            eventBuilder.addEventBinding(
+                    CustomUIEventBindingType.Activating,
+                    "#ResetButton",
+                    EventData.of("Action", "reset")
+            );
         }
 
         // Bind save button
@@ -275,6 +313,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
             return;
         }
 
+        // Handle server owned dropdown value changes
+        if (event.getServerOwned() != null) {
+            pendingServerOwned = "yes".equals(event.getServerOwned());
+            WaystoneRegistry.get().updateServerOwned(waystoneId, pendingServerOwned);
+            sendUpdate(null, false);
+            return;
+        }
+
         String action = event.getAction();
         if (action == null) {
             sendUpdate(null, false);
@@ -319,6 +365,13 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
             }
             case "exit" -> {
                 close();
+            }
+            case "reset" -> {
+                // Only ops can reset waystones
+                if (isOp) {
+                    WaystoneRegistry.get().unregister(waystoneId);
+                    close();
+                }
             }
             default -> sendUpdate(null, false);
         }

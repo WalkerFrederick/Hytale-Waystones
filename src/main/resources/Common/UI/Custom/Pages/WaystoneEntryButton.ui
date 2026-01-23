@@ -1,24 +1,46 @@
+$C = "../Common.ui";
 
-Button #Button {
-  Padding: (Full: 6);
-  LayoutMode: Left;
-  Style: (
-    Hovered: (
-      Background: #000000(0.2),
-    )
-  );
+Group #Entry {
+  Anchor: (Left: 0, Right: 0, Height: 36);
 
-  Label #Name {
-    Style: (RenderBold: true, TextColor: #ffffff);
-    FlexWeight: 1;
+  Button #Button {
+    Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+    Padding: (Left: 6, Right: 34, Top: 6, Bottom: 6);
+    LayoutMode: Left;
+    Style: (
+      Hovered: (
+        Background: #000000(0.2),
+      )
+    );
+
+    Label #Name {
+      Style: (RenderBold: true, TextColor: #ffffff);
+      FlexWeight: 1;
+    }
+
+    Label #Owner {
+      Style: (TextColor: #ffffff(0.4), RenderItalics: true);
+      Anchor: (Right: 10);
+    }
+
+    Label #World {
+      Style: (TextColor: #ffffff(0.2), RenderItalics: true);
+    }
   }
 
-  Label #Owner {
-    Style: (TextColor: #ffffff(0.4), RenderItalics: true);
-    Anchor: (Right: 10);
-  }
+  // Gear icon for ops
+  Button #GearButton {
+    Visible: false;
+    Anchor: (Right: 0, Top: 4, Width: 28, Height: 28);
 
-  Label #World {
-    Style: (TextColor: #ffffff(0.2), RenderItalics: true);
+    Group {
+      Anchor: (Full: 0);
+      LayoutMode: Center;
+
+      Group {
+        Anchor: (Width: 14, Height: 14);
+        Background: "Icons/GearIcon.png";
+      }
+    }
   }
 }
