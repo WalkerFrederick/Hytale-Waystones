@@ -35,6 +35,7 @@ public class WaystoneRegistry {
 
     // Config settings
     private boolean debugLogs = false;
+    private boolean requireDiscover = false;
 
     private WaystoneRegistry() {
     }
@@ -51,6 +52,22 @@ public class WaystoneRegistry {
      */
     public void setDebugLogs(boolean enabled) {
         this.debugLogs = enabled;
+        save();
+    }
+
+    /**
+     * Checks if waystone discovery is required.
+     * When enabled, players can only see waystones they have discovered.
+     */
+    public static boolean isRequireDiscoverEnabled() {
+        return instance != null && instance.requireDiscover;
+    }
+
+    /**
+     * Sets whether waystone discovery is required.
+     */
+    public void setRequireDiscover(boolean enabled) {
+        this.requireDiscover = enabled;
         save();
     }
 
@@ -88,6 +105,9 @@ public class WaystoneRegistry {
                     BsonDocument config = document.getDocument("Config");
                     if (config.containsKey("debugLogs")) {
                         debugLogs = config.getBoolean("debugLogs").getValue();
+                    }
+                    if (config.containsKey("requireDiscover")) {
+                        requireDiscover = config.getBoolean("requireDiscover").getValue();
                     }
                 }
                 
@@ -141,6 +161,7 @@ public class WaystoneRegistry {
         // Build config section
         BsonDocument config = new BsonDocument();
         config.put("debugLogs", new org.bson.BsonBoolean(debugLogs));
+        config.put("requireDiscover", new org.bson.BsonBoolean(requireDiscover));
         
         // Build main document
         BsonDocument document = new BsonDocument();
@@ -385,6 +406,49 @@ public class WaystoneRegistry {
     }
 
     /**
+     * Updates a waystone's default discovered status.
+     */
+    public void updateDefaultDiscovered(@Nonnull String waystoneId, boolean defaultDiscovered) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone != null) {
+            waystone.setDefaultDiscovered(defaultDiscovered);
+            save();
+            if (debugLogs) {
+                LOGGER.atInfo().log("Updated waystone default discovered to: %s", defaultDiscovered);
+            }
+        }
+    }
+
+    /**
+     * Updates a waystone's color and swaps the block in-world.
+     * @param waystoneId The waystone ID
+     * @param color The new color ("default", "red", "green")
+     * @return true if the color was updated and block swapped successfully
+     */
+    public boolean updateColor(@Nonnull String waystoneId, @Nonnull String color) {
+        Waystone waystone = waystones.get(waystoneId);
+        if (waystone == null) {
+            return false;
+        }
+        
+        String oldColor = waystone.getColor();
+        if (oldColor.equals(color)) {
+            return true; // No change needed
+        }
+        
+        // Update the waystone color in data
+        waystone.setColor(color);
+        save();
+        
+        if (debugLogs) {
+            LOGGER.atInfo().log("Updated waystone '%s' color from %s to %s", waystone.getName(), oldColor, color);
+        }
+        
+        // Block swapping will be handled by WaystoneColorSwapper utility
+        return true;
+    }
+
+    /**
      * Toggles a waystone's visibility.
      */
     public void toggleVisibility(@Nonnull String waystoneId) {
@@ -460,6 +524,13 @@ public class WaystoneRegistry {
      */
     public int count() {
         return waystones.size();
+    }
+
+    /**
+     * Checks if a waystone with the given ID exists.
+     */
+    public boolean exists(@Nonnull String waystoneId) {
+        return waystones.containsKey(waystoneId);
     }
     
     /**

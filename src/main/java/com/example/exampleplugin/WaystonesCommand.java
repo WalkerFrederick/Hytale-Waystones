@@ -1,6 +1,7 @@
 package com.example.exampleplugin;
 
 import com.example.exampleplugin.waystone.Waystone;
+import com.example.exampleplugin.waystone.WaystoneColorSwapper;
 import com.example.exampleplugin.waystone.WaystoneListPage;
 import com.example.exampleplugin.waystone.WaystoneRegistry;
 import com.example.exampleplugin.waystone.WaystoneSettingsPage;
@@ -41,6 +42,7 @@ public class WaystonesCommand extends CommandBase {
         // Add subcommands
         addSubCommand((AbstractCommand) new ListCommand());
         addSubCommand((AbstractCommand) new EditCommand());
+        addSubCommand((AbstractCommand) new ConfigCommand());
     }
 
     @Override
@@ -247,13 +249,76 @@ public class WaystonesCommand extends CommandBase {
                     case "id", "createdat" -> {
                         context.sendMessage(Message.raw("Editing " + property + " is not supported."));
                     }
+                    case "defaultdiscovered" -> {
+                        boolean defaultDiscovered = Boolean.parseBoolean(value);
+                        waystone.setDefaultDiscovered(defaultDiscovered);
+                        WaystoneRegistry.get().save();
+                        context.sendMessage(Message.raw("Updated defaultDiscovered to: " + defaultDiscovered));
+                    }
+                    case "color" -> {
+                        // Validate color value
+                        if (!value.equals("default") && !value.equals("red") && !value.equals("green")) {
+                            context.sendMessage(Message.raw("Invalid color. Available: default, red, green"));
+                            return;
+                        }
+                        WaystoneRegistry.get().updateColor(waystone.getId(), value);
+                        WaystoneColorSwapper.swapBlock(waystone.getId());
+                        context.sendMessage(Message.raw("Updated color to: " + value));
+                    }
                     default -> {
                         context.sendMessage(Message.raw("Unknown property: " + property));
-                        context.sendMessage(Message.raw("Available properties: name, isPublic, priority, textColor, teleportDirection, playerOrientation, serverOwned, ownerName, ownerUuid"));
+                        context.sendMessage(Message.raw("Available properties: name, isPublic, priority, textColor, teleportDirection, playerOrientation, serverOwned, ownerName, ownerUuid, defaultDiscovered, color"));
                     }
                 }
             } catch (NumberFormatException e) {
                 context.sendMessage(Message.raw("Invalid value for " + property + ": " + value));
+            }
+        }
+    }
+
+    /**
+     * Subcommand: /waystones config <property> <value>
+     * Edits plugin configuration.
+     * Requires permission: hytale.command.waystones.allowEditAll
+     */
+    private static class ConfigCommand extends CommandBase {
+
+        @Nonnull
+        private final RequiredArg<String> propertyArg = withRequiredArg("property", "The config property to edit (debugLogs, requireDiscover)", (ArgumentType<String>) ArgTypes.STRING);
+
+        @Nonnull
+        private final RequiredArg<String> valueArg = withRequiredArg("value", "The new value (true/false)", (ArgumentType<String>) ArgTypes.STRING);
+
+        public ConfigCommand() {
+            super("config", "Edits plugin configuration.");
+            requirePermission(HytalePermissions.fromCommand("waystones.allowEditAll"));
+        }
+
+        @Override
+        protected void executeSync(@Nonnull CommandContext context) {
+            String property = propertyArg.get(context).toLowerCase();
+            String value = stripQuotes(valueArg.get(context));
+
+            switch (property) {
+                case "debuglogs" -> {
+                    boolean debugLogs = Boolean.parseBoolean(value);
+                    WaystoneRegistry.get().setDebugLogs(debugLogs);
+                    context.sendMessage(Message.raw("Config updated: debugLogs = " + debugLogs));
+                }
+                case "requirediscover" -> {
+                    boolean requireDiscover = Boolean.parseBoolean(value);
+                    WaystoneRegistry.get().setRequireDiscover(requireDiscover);
+                    context.sendMessage(Message.raw("Config updated: requireDiscover = " + requireDiscover));
+                    if (requireDiscover) {
+                        context.sendMessage(Message.raw("Players must now discover waystones before they appear in their list."));
+                    } else {
+                        context.sendMessage(Message.raw("All waystones are now visible regardless of discovery status."));
+                    }
+                }
+                default -> {
+                    context.sendMessage(Message.raw("Unknown config property: " + property));
+                    context.sendMessage(Message.raw("Available properties: debugLogs, requireDiscover"));
+                }
             }
         }
     }

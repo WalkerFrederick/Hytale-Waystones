@@ -1,5 +1,6 @@
 package com.example.exampleplugin;
 
+import com.example.exampleplugin.waystone.PlayerDiscoveryRegistry;
 import com.example.exampleplugin.waystone.WaystoneComponent;
 import com.example.exampleplugin.waystone.WaystonePlacementHandler;
 import com.example.exampleplugin.waystone.WaystoneRegistry;
@@ -62,8 +63,10 @@ public class WaystonesPlugin extends JavaPlugin {
         EventRegistry eventRegistry = getEventRegistry();
         eventRegistry.registerGlobal(AllWorldsLoadedEvent.class, event -> {
             WaystoneRegistry.get().load();
+            PlayerDiscoveryRegistry.get().load();
             if (WaystoneRegistry.isDebugEnabled()) {
-                LOGGER.atInfo().log("Waystone system initialized with %d waystones", WaystoneRegistry.get().count());
+                LOGGER.atInfo().log("Waystone system initialized with %d waystones, %d players with discovery data",
+                        WaystoneRegistry.get().count(), PlayerDiscoveryRegistry.get().getPlayerCount());
             }
         });
 
@@ -79,6 +82,13 @@ public class WaystonesPlugin extends JavaPlugin {
             WaystoneRegistry.get().save();
             if (WaystoneRegistry.isDebugEnabled()) {
                 LOGGER.atInfo().log("Saved waystones on shutdown");
+            }
+        }
+        // Save player discovery data on shutdown
+        if (PlayerDiscoveryRegistry.get().isLoaded()) {
+            PlayerDiscoveryRegistry.get().save();
+            if (WaystoneRegistry.isDebugEnabled()) {
+                LOGGER.atInfo().log("Saved player discovery data on shutdown");
             }
         }
     }

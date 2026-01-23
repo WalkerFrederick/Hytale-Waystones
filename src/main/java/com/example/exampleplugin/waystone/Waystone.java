@@ -29,7 +29,7 @@ public class Waystone {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Codec<Waystone> createCodec() {
-        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
+        return (Codec<Waystone>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(Waystone.class, Waystone::new)
                 .addField(new KeyedCodec("Id", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).id = (String)s, w -> ((Waystone)w).id))
                 .addField(new KeyedCodec("Name", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).name = (String)s, w -> ((Waystone)w).name))
                 .addField(new KeyedCodec("World", (Codec) Codec.STRING), (w, s) -> ((Waystone)w).worldName = (String)s, w -> ((Waystone)w).worldName))
@@ -55,6 +55,10 @@ public class Waystone {
                 .append(new KeyedCodec("PlayerOrientation", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).playerOrientation = v != null ? (String)v : "away", w -> ((Waystone)w).playerOrientation)
                 .add())
                 .append(new KeyedCodec("ServerOwned", (Codec) Codec.BOOLEAN, false, true), (w, v) -> ((Waystone)w).serverOwned = v != null && (Boolean)v, w -> ((Waystone)w).serverOwned)
+                .add())
+                .append(new KeyedCodec("DefaultDiscovered", (Codec) Codec.BOOLEAN, false, true), (w, v) -> ((Waystone)w).defaultDiscovered = v != null && (Boolean)v, w -> ((Waystone)w).defaultDiscovered)
+                .add())
+                .append(new KeyedCodec("Color", (Codec) Codec.STRING, false, true), (w, v) -> ((Waystone)w).color = v != null ? (String)v : "default", w -> ((Waystone)w).color)
                 .add()
                 .build();
     }
@@ -82,6 +86,8 @@ public class Waystone {
     private String teleportDirection = "north"; // north, south, east, west
     private String playerOrientation = "away"; // away, towards
     private boolean serverOwned = false; // If true, waystone is owned by server (no owner name displayed)
+    private boolean defaultDiscovered = false; // If true, waystone is visible to all players even if requireDiscover is enabled
+    private String color = "default"; // Color variant: "default", "red", "green"
 
     /**
      * Default constructor for codec deserialization.
@@ -244,6 +250,44 @@ public class Waystone {
 
     public void setServerOwned(boolean serverOwned) {
         this.serverOwned = serverOwned;
+    }
+
+    public boolean isDefaultDiscovered() {
+        return defaultDiscovered;
+    }
+
+    public void setDefaultDiscovered(boolean defaultDiscovered) {
+        this.defaultDiscovered = defaultDiscovered;
+    }
+
+    /**
+     * Gets the color variant of this waystone.
+     * @return "default", "red", or "green"
+     */
+    @Nonnull
+    public String getColor() {
+        return color != null ? color : "default";
+    }
+
+    /**
+     * Sets the color variant of this waystone.
+     * @param color "default", "red", or "green"
+     */
+    public void setColor(@Nonnull String color) {
+        this.color = color;
+    }
+
+    /**
+     * Gets the block ID for this waystone's color variant.
+     * @return The block type ID (e.g., "Warp_Block", "Warp_Block_Red", "Warp_Block_Green")
+     */
+    @Nonnull
+    public String getBlockId() {
+        return switch (getColor()) {
+            case "red" -> "Warp_Block_Red";
+            case "green" -> "Warp_Block_Green";
+            default -> "Warp_Block";
+        };
     }
 
     /**

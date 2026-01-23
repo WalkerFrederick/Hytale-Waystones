@@ -31,7 +31,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         private static BuilderCodec<SettingsEventData> createCodec() {
-            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
+            return (BuilderCodec<SettingsEventData>) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) ((BuilderCodec.Builder) BuilderCodec.builder(SettingsEventData.class, SettingsEventData::new)
                     .append(new KeyedCodec("Action", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).action = (String)s, e -> ((SettingsEventData)e).action)
                     .add())
@@ -53,6 +53,12 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     .append(new KeyedCodec("@ServerOwnedInput", (Codec) Codec.STRING),
                             (e, s) -> ((SettingsEventData)e).serverOwned = (String)s, e -> ((SettingsEventData)e).serverOwned)
                     .add())
+                    .append(new KeyedCodec("@DefaultDiscoveredInput", (Codec) Codec.STRING),
+                            (e, s) -> ((SettingsEventData)e).defaultDiscovered = (String)s, e -> ((SettingsEventData)e).defaultDiscovered)
+                    .add())
+                    .append(new KeyedCodec("@ColorInput", (Codec) Codec.STRING),
+                            (e, s) -> ((SettingsEventData)e).color = (String)s, e -> ((SettingsEventData)e).color)
+                    .add())
                     .build();
         }
 
@@ -67,6 +73,8 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         private String direction;
         private String orientation;
         private String serverOwned;
+        private String defaultDiscovered;
+        private String color;
 
         public String getAction() {
             return action;
@@ -95,6 +103,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         public String getServerOwned() {
             return serverOwned;
         }
+
+        public String getDefaultDiscovered() {
+            return defaultDiscovered;
+        }
+
+        public String getColor() {
+            return color;
+        }
     }
 
     private final String waystoneId;
@@ -109,6 +125,8 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
     private String pendingDirection;
     private String pendingOrientation;
     private boolean pendingServerOwned;
+    private boolean pendingDefaultDiscovered;
+    private String pendingColor;
     // Error message to display
     private String errorMessage = null;
 
@@ -136,6 +154,8 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
         this.pendingOrientation = waystone != null ? waystone.getPlayerOrientation() : "away";
         this.pendingServerOwned = waystone != null && waystone.isServerOwned();
+        this.pendingDefaultDiscovered = waystone != null && waystone.isDefaultDiscovered();
+        this.pendingColor = waystone != null ? waystone.getColor() : "default";
     }
 
     @Override
@@ -160,6 +180,11 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 new DropdownEntryInfo(LocalizableString.fromString("Away from Statue"), "away"),
                 new DropdownEntryInfo(LocalizableString.fromString("Towards Statue"), "towards")
         });
+        commandBuilder.set("#WaystoneColor #ColorInput.Entries", new DropdownEntryInfo[] {
+                new DropdownEntryInfo(LocalizableString.fromString("Default (Blue)"), "default"),
+                new DropdownEntryInfo(LocalizableString.fromString("Red"), "red"),
+                new DropdownEntryInfo(LocalizableString.fromString("Green"), "green")
+        });
 
         // Set current waystone values in the text fields
         Waystone waystone = WaystoneRegistry.get().get(waystoneId);
@@ -168,6 +193,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
             commandBuilder.set("#Visibility #Input.Value", waystone.isPublic() ? "public" : "private");
             commandBuilder.set("#TeleportDirection #DirectionInput.Value", waystone.getTeleportDirection());
             commandBuilder.set("#PlayerOrientation #OrientationInput.Value", waystone.getPlayerOrientation());
+            commandBuilder.set("#WaystoneColor #ColorInput.Value", waystone.getColor());
         }
         
         // Hide visibility section if user cannot make waystones public
@@ -213,6 +239,14 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 false
         );
 
+        // Bind color dropdown value changes
+        eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#WaystoneColor #ColorInput",
+                EventData.of("@ColorInput", "#WaystoneColor #ColorInput.Value"),
+                false
+        );
+
         // Priority section - only visible to ops
         if (hasFullEditPerm) {
             commandBuilder.set("#PrioritySection.Visible", true);
@@ -245,6 +279,26 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                     EventData.of("@ServerOwnedInput", "#ServerOwnedSection #ServerOwnedInput.Value"),
                     false
             );
+
+            // Default Discovered section - only visible if requireDiscover is enabled
+            if (WaystoneRegistry.isRequireDiscoverEnabled()) {
+                commandBuilder.set("#DefaultDiscoveredSection.Visible", true);
+                commandBuilder.set("#DefaultDiscoveredSection #DefaultDiscoveredInput.Entries", new DropdownEntryInfo[] {
+                        new DropdownEntryInfo(LocalizableString.fromString("No"), "no"),
+                        new DropdownEntryInfo(LocalizableString.fromString("Yes"), "yes")
+                });
+                if (waystone != null) {
+                    commandBuilder.set("#DefaultDiscoveredSection #DefaultDiscoveredInput.Value", waystone.isDefaultDiscovered() ? "yes" : "no");
+                }
+
+                // Bind default discovered dropdown value changes
+                eventBuilder.addEventBinding(
+                        CustomUIEventBindingType.ValueChanged,
+                        "#DefaultDiscoveredSection #DefaultDiscoveredInput",
+                        EventData.of("@DefaultDiscoveredInput", "#DefaultDiscoveredSection #DefaultDiscoveredInput.Value"),
+                        false
+                );
+            }
 
             // Reset section - also only visible to ops
             commandBuilder.set("#ResetSection.Visible", true);
@@ -330,6 +384,24 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         if (event.getServerOwned() != null) {
             pendingServerOwned = "yes".equals(event.getServerOwned());
             WaystoneRegistry.get().updateServerOwned(waystoneId, pendingServerOwned);
+            sendUpdate(null, false);
+            return;
+        }
+
+        // Handle default discovered dropdown value changes
+        if (event.getDefaultDiscovered() != null) {
+            pendingDefaultDiscovered = "yes".equals(event.getDefaultDiscovered());
+            WaystoneRegistry.get().updateDefaultDiscovered(waystoneId, pendingDefaultDiscovered);
+            sendUpdate(null, false);
+            return;
+        }
+
+        // Handle color dropdown value changes
+        if (event.getColor() != null) {
+            pendingColor = event.getColor();
+            WaystoneRegistry.get().updateColor(waystoneId, pendingColor);
+            // Swap the block in-world
+            WaystoneColorSwapper.swapBlock(waystoneId);
             sendUpdate(null, false);
             return;
         }

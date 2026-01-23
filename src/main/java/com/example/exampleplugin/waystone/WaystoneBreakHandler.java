@@ -23,10 +23,24 @@ import java.util.UUID;
 public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBlockEvent> {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    
+    // All waystone block variants (base + colors)
     private static final String WAYSTONE_BLOCK_ID = "Warp_Block";
+    private static final String WAYSTONE_BLOCK_ID_RED = "Warp_Block_Red";
+    private static final String WAYSTONE_BLOCK_ID_GREEN = "Warp_Block_Green";
 
     public WaystoneBreakHandler() {
         super(BreakBlockEvent.class);
+    }
+
+    /**
+     * Checks if a block type ID is any waystone variant.
+     */
+    private boolean isWaystoneBlock(String blockTypeId) {
+        // Check for exact match or namespace-prefixed match (e.g., "exampleplugin:Warp_Block")
+        return blockTypeId.equals(WAYSTONE_BLOCK_ID) || blockTypeId.endsWith(":" + WAYSTONE_BLOCK_ID)
+                || blockTypeId.equals(WAYSTONE_BLOCK_ID_RED) || blockTypeId.endsWith(":" + WAYSTONE_BLOCK_ID_RED)
+                || blockTypeId.equals(WAYSTONE_BLOCK_ID_GREEN) || blockTypeId.endsWith(":" + WAYSTONE_BLOCK_ID_GREEN);
     }
 
     @Nullable
@@ -43,8 +57,8 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
                        @Nonnull BreakBlockEvent event) {
         String blockTypeId = event.getBlockType().getId();
         
-        // Only process waystone blocks
-        if (!blockTypeId.equals(WAYSTONE_BLOCK_ID) && !blockTypeId.endsWith(":" + WAYSTONE_BLOCK_ID)) {
+        // Only process waystone blocks (all color variants)
+        if (!isWaystoneBlock(blockTypeId)) {
             return;
         }
         

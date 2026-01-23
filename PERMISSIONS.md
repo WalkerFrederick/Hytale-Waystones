@@ -10,6 +10,7 @@ This document provides a comprehensive overview of all permissions available in 
 | `hytale.command.waystones.allowEditAll` | Edit any waystone's settings | ✅ | ❌ |
 | `hytale.command.waystones.allowSeeAllPrivate` | View and teleport to all private waystones | ✅ | ❌ |
 | `hytale.command.waystones.allowPrivateWaystoneRemoval` | Break private waystones owned by others | ✅ | ❌ |
+| `hytale.command.waystones.allowShowUndiscovered` | See all waystones without discovering them | ✅ | ❌ |
 | `hytale.command.waystones.blockWaystonePlacement` | Prevent placing waystone blocks | ❌* | ❌ |
 | `hytale.command.waystones.blockWaystoneRemoval` | Prevent breaking waystone blocks | ❌* | ❌ |
 | `hytale.command.waystones.blockPublicWaystoneCreation` | Force all new waystones to be private | ❌* | ❌ |
@@ -84,6 +85,20 @@ These permissions grant additional capabilities to users.
 - Does NOT allow breaking server-owned waystones (only OPs can do that)
 
 **Use Case:** Moderators who need to remove abandoned or problematic private waystones.
+
+---
+
+#### `hytale.command.waystones.allowShowUndiscovered`
+
+**Purpose:** Allows viewing all waystones regardless of discovery status.
+
+**Behavior:**
+- Only relevant when the `requireDiscover` config option is enabled
+- Without this permission (and with `requireDiscover` enabled), players only see waystones they have physically visited
+- With this permission, the discovery filter is bypassed - player sees all waystones as normal
+- OPs automatically have this permission
+
+**Use Case:** Staff members who need to see the full waystone network without having to physically visit each one.
 
 ---
 

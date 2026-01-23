@@ -1,0 +1,22 @@
+{
+  "Parent": "Warp_Block",
+  "BlockType": {
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Warp_Statue/Textures/waystone-green.png",
+        "Weight": 1
+      }
+    ],
+    "ParticleColor": "#44bb44",
+    "Light": {
+      "Color": "#74c274"
+    },
+    "Particles": [
+      {
+        "SystemId": "Torch_Fire_Green",
+        "TargetNodeName": "Emiter",
+        "Scale": 0.85
+      }
+    ]
+  }
+}

@@ -56,6 +56,11 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
 
         String currentWaystoneId = currentWaystone != null ? currentWaystone.getId() : null;
 
+        // Mark waystone as discovered for this player (always track, regardless of config)
+        if (currentWaystoneId != null) {
+            PlayerDiscoveryRegistry.get().discoverWaystone(playerUuid, currentWaystoneId);
+        }
+
         // Create the waystone list page
         return new WaystoneListPage(
                 playerRef,

@@ -61,7 +61,8 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         );
 
         if (existingWaystone != null) {
-            // Existing waystone - open the list page
+            // Existing waystone - mark as discovered and open the list page
+            PlayerDiscoveryRegistry.get().discoverWaystone(playerUuid, existingWaystone.getId());
             return createListPage(playerRef, playerUuid, existingWaystone.getId(), store, ref);
         } else {
             // New waystone - check max waystones limit first
@@ -192,6 +193,8 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                             defaultToPublic
                     );
                     WaystoneRegistry.get().register(newWaystone);
+                    // Auto-discover the waystone for its creator
+                    PlayerDiscoveryRegistry.get().discoverWaystone(finalPlayerUuid, newWaystone.getId());
                     if (WaystoneRegistry.isDebugEnabled()) {
                         LOGGER.atInfo().log("Created new waystone: '%s' at (%.0f, %.0f, %.0f) in world '%s' (public: %s)",
                                 newName, x, y, z, worldName, defaultToPublic);

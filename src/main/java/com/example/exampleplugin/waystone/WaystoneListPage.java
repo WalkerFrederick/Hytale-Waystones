@@ -104,6 +104,7 @@ public class WaystoneListPage extends CustomUIPage {
     private final Consumer<String> onEditWaystone; // Callback for users with edit permission to edit any waystone by ID
     private final boolean hasEditPermission;
     private final boolean canSeeAllPrivate;
+    private final boolean bypassesDiscovery;
     private String searchQuery = "";
     // Cache the current list of waystones for index-based lookup
     private List<Waystone> currentWaystones = List.of();
@@ -139,6 +140,7 @@ public class WaystoneListPage extends CustomUIPage {
         // Use hasPermissionOrOp so OPs automatically get these permissions
         this.hasEditPermission = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_EDIT_ALL);
         this.canSeeAllPrivate = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_SEE_ALL_PRIVATE);
+        this.bypassesDiscovery = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_SHOW_UNDISCOVERED);
     }
 
     @Override
@@ -211,6 +213,13 @@ public class WaystoneListPage extends CustomUIPage {
                     .toList();
         } else {
             allWaystones = WaystoneRegistry.get().getVisibleTo(playerUuid);
+        }
+
+        // Apply discovery filter if requireDiscover is enabled and player doesn't bypass it
+        if (WaystoneRegistry.isRequireDiscoverEnabled() && !bypassesDiscovery) {
+            allWaystones = allWaystones.stream()
+                    .filter(w -> w.isDefaultDiscovered() || PlayerDiscoveryRegistry.get().hasDiscovered(playerUuid, w.getId()))
+                    .toList();
         }
 
         // Filter by search query if present

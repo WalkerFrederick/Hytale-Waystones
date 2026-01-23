@@ -35,6 +35,12 @@ public final class WaystonePermissions {
      */
     public static final String ALLOW_PRIVATE_WAYSTONE_REMOVAL = "hytale.command.waystones.allowPrivateWaystoneRemoval";
     
+    /**
+     * Allows viewing all waystones regardless of discovery status.
+     * Bypasses the requireDiscover config setting.
+     */
+    public static final String ALLOW_SHOW_UNDISCOVERED = "hytale.command.waystones.allowShowUndiscovered";
+    
     // ============================================
     // BLOCK PERMISSIONS (deny/restrict access)
     // OPs bypass all block permissions

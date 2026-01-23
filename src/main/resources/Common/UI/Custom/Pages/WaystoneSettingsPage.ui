@@ -111,6 +111,27 @@ $C.@PageOverlay {
             @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
           }
         }
+
+        // Waystone Color dropdown section
+        Group #WaystoneColor {
+          LayoutMode: Top;
+          Anchor: (Top: 16);
+
+          Label {
+            Text: "Waystone Color";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+          }
+
+          Label {
+            Text: "Visual color of the waystone statue";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #ColorInput {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
         
         // Priority section (ops only)
         Group #PrioritySection {
@@ -156,6 +177,28 @@ $C.@PageOverlay {
           }
 
           $C.@DropdownBox #ServerOwnedInput {
+            @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
+          }
+        }
+
+        // Default Discovered section (Server Perm Needed, only when requireDiscover is enabled)
+        Group #DefaultDiscoveredSection {
+          LayoutMode: Top;
+          Visible: false;
+
+          Label {
+            Text: "Default Discovered (Server Perm Needed)";
+            Style: (RenderBold: true, RenderUppercase: true, TextColor: #94a7bb);
+            Anchor: (Top: 16);
+          }
+
+          Label {
+            Text: "Skip discovery requirement for this waystone";
+            Style: (FontSize: 12, TextColor: #6a7a8a);
+            Anchor: (Top: 4);
+          }
+
+          $C.@DropdownBox #DefaultDiscoveredInput {
             @Anchor = (Top: 8, Left: 0, Height: 32, Width: 200);
           }
         }
