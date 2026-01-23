@@ -11,6 +11,8 @@ import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.server.OpenCustomUIInteraction;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -64,6 +66,18 @@ public class WaystonePageSupplier implements OpenCustomUIInteraction.CustomPageS
                     Teleport teleport = waystone.toTeleport();
                     if (teleport != null) {
                         store.addComponent(ref, Teleport.getComponentType(), teleport);
+                        
+                        // Show arrival banner
+                        EventTitleUtil.showEventTitleToPlayer(
+                                playerRef,
+                                Message.raw(waystone.getName()),           // Primary title: waystone name
+                                Message.raw("Waystone"),                   // Secondary title: placeholder
+                                true,                                      // isMajor: large banner style
+                                null,                                      // icon: none for now
+                                3.0f,                                      // duration
+                                1.0f,                                      // fadeInDuration
+                                1.0f                                       // fadeOutDuration
+                        );
                     }
                 },
                 // On rename callback - opens the naming page

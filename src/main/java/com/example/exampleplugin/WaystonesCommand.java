@@ -20,6 +20,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.permissions.HytalePermissions;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 
 import javax.annotation.Nonnull;
 
@@ -92,6 +93,18 @@ public class WaystonesCommand extends CommandBase {
                             Teleport teleport = waystone.toTeleport();
                             if (teleport != null) {
                                 store.addComponent(ref, Teleport.getComponentType(), teleport);
+                                
+                                // Show arrival banner
+                                EventTitleUtil.showEventTitleToPlayer(
+                                        playerRef,
+                                        Message.raw(waystone.getName()),           // Primary title: waystone name
+                                        Message.raw("Waystone"),                   // Secondary title: placeholder
+                                        true,                                      // isMajor: large banner style
+                                        null,                                      // icon: none for now
+                                        0.5f,                                      // duration
+                                        1.0f,                                      // fadeInDuration
+                                        1.0f                                       // fadeOutDuration
+                                );
                             }
                         }
                     },
