@@ -461,6 +461,17 @@ public class WaystoneRegistry {
     public int count() {
         return waystones.size();
     }
+    
+    /**
+     * Counts the number of waystones owned by a specific player.
+     * @param ownerUuid The UUID of the player (as string)
+     * @return The number of waystones owned by this player
+     */
+    public int countByOwner(@Nonnull String ownerUuid) {
+        return (int) waystones.values().stream()
+                .filter(w -> ownerUuid.equals(w.getOwnerUuid()))
+                .count();
+    }
 
     /**
      * Clears all waystones (for testing).

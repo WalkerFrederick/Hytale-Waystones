@@ -10,7 +10,6 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
-import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -25,8 +24,6 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final String WAYSTONE_BLOCK_ID = "Warp_Block";
-    private static final String BLOCK_REMOVAL_PERMISSION = "hytale.command.waystones.blockWaystoneRemoval";
-    private static final String ALLOW_PRIVATE_REMOVAL_PERMISSION = "hytale.command.waystones.allowPrivateWaystoneRemoval";
 
     public WaystoneBreakHandler() {
         super(BreakBlockEvent.class);
@@ -61,7 +58,7 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
         }
         UUID playerUuid = uuidComponent.getUuid();
         
-        boolean playerIsOp = isOp(playerUuid);
+        boolean playerIsOp = PermissionUtils.isOp(playerUuid);
         
         // Get the waystone at this position (if any)
         Waystone waystone = WaystoneRegistry.get().getByPosition(worldName, position.x, position.y, position.z);
@@ -84,7 +81,7 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
         // Check if waystone is private and player is not the owner
         // OPs and players with allowPrivateWaystoneRemoval permission can break private waystones
         if (waystone != null && !waystone.isPublic() && !waystone.isOwnedBy(playerUuid.toString())) {
-            if (!playerIsOp && !hasPermission(playerUuid, ALLOW_PRIVATE_REMOVAL_PERMISSION)) {
+            if (!playerIsOp && !PermissionUtils.hasPermission(playerUuid, WaystonePermissions.ALLOW_PRIVATE_WAYSTONE_REMOVAL)) {
                 event.setCancelled(true);
                 Player playerComponent = archetypeChunk.getComponent(index, Player.getComponentType());
                 if (playerComponent != null) {
@@ -100,7 +97,7 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
         
         // Check if user has the blockWaystoneRemoval permission (deny list)
         // OPs bypass the deny permission
-        if (!playerIsOp && hasPermission(playerUuid, BLOCK_REMOVAL_PERMISSION)) {
+        if (!playerIsOp && PermissionUtils.hasPermission(playerUuid, WaystonePermissions.BLOCK_WAYSTONE_REMOVAL)) {
             // Cancel the break
             event.setCancelled(true);
             if (WaystoneRegistry.isDebugEnabled()) {
@@ -120,37 +117,5 @@ public class WaystoneBreakHandler extends EntityEventSystem<EntityStore, BreakBl
             LOGGER.atWarning().log("Waystone block broken at %s (%d, %d, %d) but no waystone found in registry",
                     worldName, position.x, position.y, position.z);
         }
-    }
-    
-    /**
-     * Checks if a user is an OP.
-     */
-    private static boolean isOp(UUID uuid) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Checks if a user has a specific permission (either directly or via their groups).
-     */
-    private static boolean hasPermission(UUID uuid, String permission) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            // Check direct user permissions
-            if (provider.getUserPermissions(uuid).contains(permission)) {
-                return true;
-            }
-            
-            // Check group permissions
-            for (String group : provider.getGroupsForUser(uuid)) {
-                if (provider.getGroupPermissions(group).contains(permission)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }

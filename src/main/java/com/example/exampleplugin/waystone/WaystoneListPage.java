@@ -16,7 +16,6 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -137,34 +136,9 @@ public class WaystoneListPage extends CustomUIPage {
         this.onSettings = onSettings;
         this.onEditWaystone = onEditWaystone;
         UUID uuid = UUID.fromString(playerUuid);
-        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.allowEditAll");
-        this.canSeeAllPrivate = hasPermission(uuid, "hytale.command.waystones.allowSeeAllPrivate");
-    }
-    
-    /**
-     * Checks if a user has a specific permission (either directly, via their groups, or by being OP).
-     */
-    private static boolean hasPermission(UUID uuid, String permission) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            // OPs have all permissions
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-            
-            // Check direct user permissions
-            if (provider.getUserPermissions(uuid).contains(permission)) {
-                return true;
-            }
-            
-            // Check group permissions
-            for (String group : provider.getGroupsForUser(uuid)) {
-                if (provider.getGroupPermissions(group).contains(permission)) {
-                    return true;
-                }
-            }
-        }
-        
-        return false;
+        // Use hasPermissionOrOp so OPs automatically get these permissions
+        this.hasEditPermission = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_EDIT_ALL);
+        this.canSeeAllPrivate = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_SEE_ALL_PRIVATE);
     }
 
     @Override

@@ -9,7 +9,6 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
-import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.ui.DropdownEntryInfo;
 import com.hypixel.hytale.server.core.ui.LocalizableString;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
@@ -98,13 +97,10 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         }
     }
 
-    private static final String BLOCK_PUBLIC_CREATION_PERMISSION = "hytale.command.waystones.blockPublicWaystoneCreation";
-    
-    private final PlayerRef playerRef;
-    private final String playerUuid;
     private final String waystoneId;
     private final Runnable onBack;
-    private final boolean hasEditPermission;
+    /** True if user has full edit access (allowEditAll permission or is OP). Enables admin-only settings. */
+    private final boolean hasFullEditPerm;
     private final boolean canMakePublic;
 
     // Track the pending values from text fields
@@ -121,19 +117,17 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                                 @Nonnull String waystoneId,
                                 @Nonnull Runnable onBack) {
         super(playerRef, CustomPageLifetime.CanDismiss, SettingsEventData.CODEC);
-        this.playerRef = playerRef;
-        this.playerUuid = playerUuid;
         this.waystoneId = waystoneId;
         this.onBack = onBack;
 
         UUID uuid = UUID.fromString(playerUuid);
         
-        // Check if player has edit permission (or is OP)
-        this.hasEditPermission = hasPermission(uuid, "hytale.command.waystones.allowEditAll");
+        // Check if player has full edit permission (or is OP) - enables admin-only settings
+        this.hasFullEditPerm = PermissionUtils.hasPermissionOrOp(uuid, WaystonePermissions.ALLOW_EDIT_ALL);
         
         // Check if player can make waystones public (not blocked by permission, or is OP)
-        boolean isOp = isOp(uuid);
-        this.canMakePublic = isOp || !hasPermission(uuid, BLOCK_PUBLIC_CREATION_PERMISSION);
+        boolean isOp = PermissionUtils.isOp(uuid);
+        this.canMakePublic = isOp || !PermissionUtils.hasPermission(uuid, WaystonePermissions.BLOCK_PUBLIC_WAYSTONE_CREATION);
 
         // Initialize pending values from current waystone
         Waystone waystone = WaystoneRegistry.get().get(waystoneId);
@@ -142,44 +136,6 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         this.pendingDirection = waystone != null ? waystone.getTeleportDirection() : "north";
         this.pendingOrientation = waystone != null ? waystone.getPlayerOrientation() : "away";
         this.pendingServerOwned = waystone != null && waystone.isServerOwned();
-    }
-    
-    /**
-     * Checks if a user is an OP.
-     */
-    private static boolean isOp(UUID uuid) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Checks if a user has a specific permission (either directly, via their groups, or by being OP).
-     */
-    private static boolean hasPermission(UUID uuid, String permission) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            // OPs have all permissions
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-
-            // Check direct user permissions
-            if (provider.getUserPermissions(uuid).contains(permission)) {
-                return true;
-            }
-
-            // Check group permissions
-            for (String group : provider.getGroupsForUser(uuid)) {
-                if (provider.getGroupPermissions(group).contains(permission)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     @Override
@@ -258,7 +214,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         );
 
         // Priority section - only visible to ops
-        if (hasEditPermission) {
+        if (hasFullEditPerm) {
             commandBuilder.set("#PrioritySection.Visible", true);
             if (waystone != null) {
                 commandBuilder.set("#PriorityInput.Value", String.valueOf(waystone.getPriority()));
@@ -328,7 +284,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
         }
 
         // Handle priority text field value changes (ops only)
-        if (event.getPriority() != null && hasEditPermission) {
+        if (event.getPriority() != null && hasFullEditPerm) {
             try {
                 pendingPriority = Integer.parseInt(event.getPriority().trim());
             } catch (NumberFormatException e) {
@@ -408,7 +364,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
                 WaystoneRegistry.get().updateName(waystoneId, nameToSave);
 
                 // Update priority only if op
-                if (hasEditPermission) {
+                if (hasFullEditPerm) {
                     WaystoneRegistry.get().updatePriority(waystoneId, pendingPriority);
                 }
                 errorMessage = null;
@@ -425,7 +381,7 @@ public class WaystoneSettingsPage extends InteractiveCustomUIPage<WaystoneSettin
             }
             case "reset" -> {
                 // Only ops can reset waystones
-                if (hasEditPermission) {
+                if (hasFullEditPerm) {
                     WaystoneRegistry.get().unregister(waystoneId);
                     close();
                 }

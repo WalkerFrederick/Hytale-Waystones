@@ -13,8 +13,9 @@ This document provides a comprehensive overview of all permissions available in 
 | `hytale.command.waystones.blockWaystonePlacement` | Prevent placing waystone blocks | ❌* | ❌ |
 | `hytale.command.waystones.blockWaystoneRemoval` | Prevent breaking waystone blocks | ❌* | ❌ |
 | `hytale.command.waystones.blockPublicWaystoneCreation` | Force all new waystones to be private | ❌* | ❌ |
+| `hytale.command.waystones.maxWaystones.X` | Limit player to X waystones (e.g., maxWaystones.5) | ❌* | ❌ |
 
-> **Note:** Permissions marked with ❌* are "deny" permissions. OPs bypass these restrictions entirely - they cannot be blocked by these permissions.
+> **Note:** Permissions marked with ❌* are "deny" permissions or limits. OPs bypass these restrictions entirely.
 
 ---
 
@@ -147,6 +148,36 @@ These permissions restrict capabilities. They act as a "deny list" - if a user h
 
 ---
 
+#### `hytale.command.waystones.maxWaystones.X`
+
+**Purpose:** Limits the maximum number of waystones a player can own.
+
+**Behavior:**
+- Replace `X` with a number (e.g., `maxWaystones.1`, `maxWaystones.5`, `maxWaystones.10`)
+- If a player has multiple `maxWaystones.X` permissions, the **highest** value is used
+- When a player tries to place a new waystone and they've reached their limit, they receive the message: *"You have reached your maximum waystone limit (X)"*
+- If no `maxWaystones.X` permission is set, the player has **unlimited** waystones
+- OPs bypass this restriction entirely (unlimited waystones)
+
+**Use Case:** Control resource usage on servers by limiting how many waystones each player can create.
+
+**Examples:**
+```bash
+# Allow player to have max 3 waystones
+/perm user add <uuid> hytale.command.waystones.maxWaystones.3
+
+# Allow VIP group to have max 10 waystones
+/perm group add VIP hytale.command.waystones.maxWaystones.10
+
+# Allow all players to have max 5 waystones (via default group)
+/perm group add default hytale.command.waystones.maxWaystones.5
+```
+
+**Stacking Example:**
+If a player has both `maxWaystones.3` (from default group) and `maxWaystones.10` (from VIP group), they can create **10** waystones (the highest value wins).
+
+---
+
 ## Protection Rules
 
 Beyond permissions, the waystone system has built-in protection rules:
@@ -172,16 +203,23 @@ Beyond permissions, the waystone system has built-in protection rules:
 
 ### Default Player
 No special permissions. Can:
-- Place and break their own waystones
+- Place and break their own waystones (unlimited)
 - Create public or private waystones
 - See public waystones and their own private waystones
 - Teleport to visible waystones
 
+### Limited Player
+```
+/perm group add default hytale.command.waystones.maxWaystones.3
+```
+All players limited to 3 waystones. Good for resource management on public servers.
+
 ### Restricted Player
 ```
 /perm user add <uuid> hytale.command.waystones.blockPublicWaystoneCreation
+/perm user add <uuid> hytale.command.waystones.maxWaystones.5
 ```
-Can only create private waystones. Useful for preventing public waystone spam.
+Can only create private waystones, limited to 5 total. Useful for preventing public waystone spam while still allowing personal use.
 
 ### View-Only Player
 ```
@@ -190,19 +228,25 @@ Can only create private waystones. Useful for preventing public waystone spam.
 ```
 Can use existing waystones but cannot place or break any.
 
+### VIP Player
+```
+/perm group add VIP hytale.command.waystones.maxWaystones.20
+```
+VIP members get 20 waystones (overrides lower default group limits).
+
 ### Moderator
 ```
 /perm user add <uuid> hytale.command.waystones.allowListMenu
 /perm user add <uuid> hytale.command.waystones.allowSeeAllPrivate
 /perm user add <uuid> hytale.command.waystones.allowPrivateWaystoneRemoval
 ```
-Can view all waystones, teleport anywhere, and remove problematic private waystones.
+Can view all waystones, teleport anywhere, and remove problematic private waystones. Still subject to maxWaystones limits unless also given a high limit.
 
 ### Administrator
 ```
 /perm user addgroup <uuid> OP
 ```
-Full access to all features. Can edit any waystone, break server-owned waystones, bypass all restrictions.
+Full access to all features. Can edit any waystone, break server-owned waystones, bypass all restrictions including waystone limits.
 
 ---
 

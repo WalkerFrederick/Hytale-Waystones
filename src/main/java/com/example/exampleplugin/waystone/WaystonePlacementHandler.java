@@ -12,7 +12,8 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.ser
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.permissions.PermissionsModule;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.logger.HytaleLogger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,6 +26,8 @@ import java.util.UUID;
  * If it exists, it opens the waystone list.
  */
 public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomPageSupplier {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
 
     @Nullable
     @Override
@@ -60,7 +63,23 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
             // Existing waystone - open the list page
             return createListPage(playerRef, playerUuid, existingWaystone.getId(), store, ref);
         } else {
-            // New waystone - create it and open naming page
+            // New waystone - check max waystones limit first
+            UUID playerUuidObj = UUID.fromString(playerUuid);
+            
+            // OPs bypass the limit
+            if (!PermissionUtils.isOp(playerUuidObj)) {
+                int maxWaystones = PermissionUtils.getMaxWaystonesLimit(playerUuidObj);
+                if (maxWaystones >= 0) { // -1 means no limit
+                    int currentCount = WaystoneRegistry.get().countByOwner(playerUuid);
+                    if (currentCount >= maxWaystones) {
+                        // Over limit - send message and don't open naming page
+                        playerComponent.sendMessage(Message.raw("You have reached your maximum waystone limit (" + maxWaystones + ")"));
+                        return null;
+                    }
+                }
+            }
+            
+            // Create new waystone and open naming page
             return createNewWaystoneAndNamingPage(
                     playerRef,
                     playerUuid,
@@ -92,17 +111,15 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                     // Teleport to selected waystone
                     var teleport = waystone.toTeleport();
                     if (teleport != null) {
-                        boolean isCrossWorld = !waystone.getWorldName().equals(currentWorld.getName());
-                        System.out.println("[Waystone] === TELEPORT REQUEST ===");
-                        System.out.println("[Waystone] Waystone: '" + waystone.getName() + "' (ID: " + waystone.getId() + ")");
-                        System.out.println("[Waystone] Target world: '" + waystone.getWorldName() + "' (cross-world: " + isCrossWorld + ")");
-                        System.out.println("[Waystone] Teleport pos: (" + 
-                                teleport.getPosition().x + ", " + teleport.getPosition().y + ", " + teleport.getPosition().z + ")");
-                        System.out.println("[Waystone] =========================");
-                        
+                        if (WaystoneRegistry.isDebugEnabled()) {
+                            boolean isCrossWorld = !waystone.getWorldName().equals(currentWorld.getName());
+                            LOGGER.atInfo().log("Teleport request: '%s' (ID: %s) to world '%s' (cross-world: %s) at (%.1f, %.1f, %.1f)",
+                                    waystone.getName(), waystone.getId(), waystone.getWorldName(), isCrossWorld,
+                                    teleport.getPosition().x, teleport.getPosition().y, teleport.getPosition().z);
+                        }
                         store.addComponent(ref, com.hypixel.hytale.server.core.modules.entity.teleport.Teleport.getComponentType(), teleport);
                     } else {
-                        System.out.println("[Waystone] toTeleport returned null!");
+                        LOGGER.atWarning().log("toTeleport returned null for waystone '%s'", waystone.getName());
                     }
                 },
                 () -> {
@@ -122,8 +139,6 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         );
     }
 
-    private static final String BLOCK_PUBLIC_CREATION_PERMISSION = "hytale.command.waystones.blockPublicWaystoneCreation";
-    
     private CustomUIPage createNewWaystoneAndNamingPage(@Nonnull PlayerRef playerRef,
                                                          @Nonnull String playerUuid,
                                                          @Nonnull String playerName,
@@ -143,7 +158,8 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
         // Check if user has blockPublicWaystoneCreation permission - if so, default to private
         // OPs always default to public
         UUID playerUuidObj = UUID.fromString(playerUuid);
-        final boolean defaultToPublic = isOp(playerUuidObj) || !hasPermission(playerUuidObj, BLOCK_PUBLIC_CREATION_PERMISSION);
+        final boolean defaultToPublic = PermissionUtils.isOp(playerUuidObj) || 
+                !PermissionUtils.hasPermission(playerUuidObj, WaystonePermissions.BLOCK_PUBLIC_WAYSTONE_CREATION);
 
         // Open naming page - waystone will be created and registered only on submit
         return new WaystoneNamingPage(
@@ -163,46 +179,19 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                             defaultToPublic
                     );
                     WaystoneRegistry.get().register(newWaystone);
-                    System.out.println("[Waystone] Created new waystone: '" + newName + "' at (" + x + ", " + y + ", " + z + ") in world '" + worldName + "' (public: " + defaultToPublic + ")");
+                    if (WaystoneRegistry.isDebugEnabled()) {
+                        LOGGER.atInfo().log("Created new waystone: '%s' at (%.0f, %.0f, %.0f) in world '%s' (public: %s)",
+                                newName, x, y, z, worldName, defaultToPublic);
+                    }
                 },
                 () -> {
                     // On cancel - don't register the waystone
                     // Next time user clicks the block, they'll see the naming dialog again
-                    System.out.println("[Waystone] Waystone creation cancelled");
+                    if (WaystoneRegistry.isDebugEnabled()) {
+                        LOGGER.atInfo().log("Waystone creation cancelled");
+                    }
                 }
         );
-    }
-    
-    /**
-     * Checks if a user has a specific permission (either directly or via their groups).
-     */
-    private static boolean hasPermission(UUID uuid, String permission) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            // Check direct user permissions
-            if (provider.getUserPermissions(uuid).contains(permission)) {
-                return true;
-            }
-            
-            // Check group permissions
-            for (String group : provider.getGroupsForUser(uuid)) {
-                if (provider.getGroupPermissions(group).contains(permission)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Checks if a user is an OP.
-     */
-    private static boolean isOp(UUID uuid) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void openRenamePage(@Nonnull PlayerRef playerRef,
@@ -210,15 +199,15 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                                  @Nonnull String currentName,
                                  @Nonnull Store<EntityStore> store,
                                  @Nonnull Ref<EntityStore> ref) {
-        System.out.println("[Waystone] openRenamePage called for waystone: " + waystoneId);
-        System.out.println("[Waystone] Current name: " + currentName);
+        if (WaystoneRegistry.isDebugEnabled()) {
+            LOGGER.atInfo().log("openRenamePage called for waystone: %s (current name: %s)", waystoneId, currentName);
+        }
         
         Player playerComponent = (Player) store.getComponent(ref, Player.getComponentType());
         if (playerComponent == null) {
-            System.out.println("[Waystone] ERROR: playerComponent is null!");
+            LOGGER.atWarning().log("playerComponent is null in openRenamePage");
             return;
         }
-        System.out.println("[Waystone] Got player component, opening naming page...");
 
         WaystoneNamingPage namingPage = new WaystoneNamingPage(
                 playerRef,
@@ -229,9 +218,7 @@ public class WaystonePlacementHandler implements OpenCustomUIInteraction.CustomP
                 () -> { /* cancelled */ }
         );
 
-        System.out.println("[Waystone] Calling openCustomPage for naming page...");
         playerComponent.getPageManager().openCustomPage(ref, store, namingPage);
-        System.out.println("[Waystone] openCustomPage called successfully");
     }
 
     private void openSettingsPage(@Nonnull PlayerRef playerRef,

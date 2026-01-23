@@ -8,7 +8,6 @@ import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
-import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -23,7 +22,6 @@ public class WaystonePlaceHandler extends EntityEventSystem<EntityStore, PlaceBl
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private static final String WAYSTONE_BLOCK_ID = "Warp_Block";
-    private static final String BLOCK_PLACEMENT_PERMISSION = "hytale.command.waystones.blockWaystonePlacement";
 
     public WaystonePlaceHandler() {
         super(PlaceBlockEvent.class);
@@ -65,7 +63,7 @@ public class WaystonePlaceHandler extends EntityEventSystem<EntityStore, PlaceBl
         
         // Check if user has the blockWaystonePlacement permission (deny list)
         // OPs bypass the deny permission
-        if (!isOp(playerUuid) && hasPermission(playerUuid, BLOCK_PLACEMENT_PERMISSION)) {
+        if (!PermissionUtils.isOp(playerUuid) && PermissionUtils.hasPermission(playerUuid, WaystonePermissions.BLOCK_WAYSTONE_PLACEMENT)) {
             // Cancel the placement
             event.setCancelled(true);
             if (WaystoneRegistry.isDebugEnabled()) {
@@ -79,37 +77,5 @@ public class WaystonePlaceHandler extends EntityEventSystem<EntityStore, PlaceBl
             LOGGER.atInfo().log("User %s placing waystone at %s (%d, %d, %d)",
                     playerUuid, worldName, position.x, position.y, position.z);
         }
-    }
-    
-    /**
-     * Checks if a user is an OP.
-     */
-    private static boolean isOp(UUID uuid) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            if (provider.getGroupsForUser(uuid).contains("OP")) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Checks if a user has a specific permission (either directly or via their groups).
-     */
-    private static boolean hasPermission(UUID uuid, String permission) {
-        for (var provider : PermissionsModule.get().getProviders()) {
-            // Check direct user permissions
-            if (provider.getUserPermissions(uuid).contains(permission)) {
-                return true;
-            }
-            
-            // Check group permissions
-            for (String group : provider.getGroupsForUser(uuid)) {
-                if (provider.getGroupPermissions(group).contains(permission)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 }
